@@ -41,9 +41,10 @@
       </div>
 
       <!-- Filtro de Disciplinas -->
-      <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 p-1 rounded-xl text-xs font-mono-tech">
+      <div class="flex flex-wrap items-center gap-1.5 bg-slate-900/90 border border-slate-800 p-1 rounded-xl text-xs font-mono-tech">
         <button onclick="filtrar('todos')" class="filter-btn active px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold transition">Todos</button>
-        <button onclick="filtrar('control')" class="filter-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition">Control & Sistemas</button>
+        <button onclick="filtrar('control')" class="filter-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition">Control & Dinámica</button>
+        <button onclick="filtrar('fisica')" class="filter-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition">Física</button>
         <button onclick="filtrar('etica')" class="filter-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition">Ética & Juicio</button>
       </div>
     </div>
@@ -83,7 +84,7 @@
         </div>
         <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
           <span class="text-[11px] font-mono-tech text-slate-400">⚡ Simulación Activa</span>
-          <button onclick="abrirVisor('ritos/opamps-analogica.html', 'Laboratorio de Computación Analógica')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold font-mono-tech transition shadow-md shadow-indigo-600/20">
+          <button onclick="abrirVisor('Ritos/modelador-analogico.html', 'Laboratorio de Computación Analógica')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold font-mono-tech transition shadow-md shadow-indigo-600/20">
             Abrir Rito ➔
           </button>
         </div>
@@ -105,7 +106,7 @@
         </div>
         <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
           <span class="text-[11px] font-mono-tech text-slate-400">🚀 Telemetría 1D</span>
-          <button onclick="abrirVisor('ritos/spacex-control.html', 'Falcon Landing 1D: Lazo Abierto vs Lazo Cerrado')" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold font-mono-tech transition shadow-md shadow-amber-600/20">
+          <button onclick="abrirVisor('Ritos/la-vs-lc.html', 'Falcon Landing 1D: Lazo Abierto vs Lazo Cerrado')" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold font-mono-tech transition shadow-md shadow-amber-600/20">
             Abrir Rito ➔
           </button>
         </div>
@@ -127,7 +128,29 @@
         </div>
         <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
           <span class="text-[11px] font-mono-tech text-slate-400">⚖️ Debate en Vivo</span>
-          <button onclick="abrirVisor('ritos/domo7-etica.html', 'Protocolo Éxodo: El Consejo del Domo 7')" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold font-mono-tech transition shadow-md shadow-cyan-600/20">
+          <button onclick="abrirVisor('Ritos/domo-7.html', 'Protocolo Éxodo: El Consejo del Domo 7')" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold font-mono-tech transition shadow-md shadow-cyan-600/20">
+            Abrir Rito ➔
+          </button>
+        </div>
+      </div>
+
+      <!-- Tarjeta 4: Reto Balístico / Física y Dinámica -->
+      <div class="sim-card fisica group relative bg-slate-900/60 hover:bg-slate-900/90 border border-slate-800 hover:border-rose-500/60 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-rose-500/10">
+        <div>
+          <div class="flex items-center justify-between text-[11px] font-mono-tech mb-3">
+            <span class="text-rose-400 font-bold bg-rose-950/60 border border-rose-800/60 px-2 py-0.5 rounded-md">Física & Dinámica</span>
+            <span class="text-slate-500">Cinemática</span>
+          </div>
+          <h3 class="text-lg font-bold text-slate-100 group-hover:text-rose-300 transition">
+            El Reto Balístico
+          </h3>
+          <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+            Calcula trayectorias, ángulos de tiro y velocidades iniciales. Domina el movimiento de proyectiles antes de que la gravedad venza al cálculo.
+          </p>
+        </div>
+        <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+          <span class="text-[11px] font-mono-tech text-slate-400">🎯 Tiro Parabólico</span>
+          <button onclick="abrirVisor('Ritos/reto-balistico.html', 'Laboratorio: Reto Balístico')" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold font-mono-tech transition shadow-md shadow-rose-600/20">
             Abrir Rito ➔
           </button>
         </div>
@@ -136,7 +159,7 @@
     </div>
   </main>
 
-  <!-- Visor Flotante Pantalla Completa (Evita que vean código o salgan de la web) -->
+  <!-- Visor Flotante Pantalla Completa -->
   <div id="visor-modal" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col">
     <!-- Barra superior del visor -->
     <div class="bg-slate-950 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between">
@@ -166,7 +189,7 @@
 
     function cerrarVisor() {
       document.getElementById('visor-modal').classList.add('hidden');
-      document.getElementById('visor-frame').src = ''; // Detiene audio/física al cerrar
+      document.getElementById('visor-frame').src = '';
     }
 
     function filtrar(categoria) {
