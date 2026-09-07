@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Códice de la Sabiduría de Malagón | Archivo de Pruebas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-lore { font-family: 'Cinzel', serif; }
+    .font-mono-tech { font-family: 'JetBrains Mono', monospace; }
+    
+    .bg-grid-arcane {
+      background-color: #030712;
+      background-image: radial-gradient(rgba(30, 41, 59, 0.5) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+  </style>
+</head>
+<body class="h-full bg-grid-arcane flex flex-col selection:bg-amber-500 selection:text-black">
+
+  <!-- Encabezado del Templo -->
+  <header class="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-30 px-6 py-4">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-slate-950 text-xl font-bold shadow-lg shadow-amber-500/20">
+          ⚡
+        </div>
+        <div>
+          <h1 class="text-lg md:text-xl font-lore font-bold tracking-wider text-amber-300">
+            SABIDURÍA DE MALAGÓN
+          </h1>
+          <p class="text-xs text-slate-400 font-mono-tech">
+            Códice de Pruebas, Modelos y Laboratorios de la Orden
+          </p>
+        </div>
+      </div>
+
+      <!-- Filtro de Disciplinas -->
+      <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 p-1 rounded-xl text-xs font-mono-tech">
+        <button onclick="filtrar('todos')" class="filter-btn active px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold transition">Todos</button>
+        <button onclick="filtrar('control')" class="filter-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition">Control & Sistemas</button>
+        <button onclick="filtrar('etica')" class="filter-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition">Ética & Juicio</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenido Principal / Catálogo -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-8">
+    
+    <div class="mb-8">
+      <span class="text-xs font-mono-tech uppercase tracking-widest text-amber-400/80 font-bold">
+        // ARCHIVOS ABIERTOS A LOS TESTIGOS //
+      </span>
+      <h2 class="text-2xl md:text-3xl font-lore font-bold text-slate-100 mt-1">
+        Reliquias & Pruebas Interactivas
+      </h2>
+      <p class="text-sm text-slate-400 mt-1 max-w-2xl">
+        Ningún concepto se aprende de memoria; el conocimiento se adquiere manipulando la realidad. Selecciona un instrumento y pon a prueba tu razonamiento.
+      </p>
+    </div>
+
+    <!-- Grid de Reliquias -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+      <!-- Tarjeta 1: Dinámica / OpAmps -->
+      <div class="sim-card control group relative bg-slate-900/60 hover:bg-slate-900/90 border border-slate-800 hover:border-indigo-500/60 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10">
+        <div>
+          <div class="flex items-center justify-between text-[11px] font-mono-tech mb-3">
+            <span class="text-indigo-400 font-bold bg-indigo-950/60 border border-indigo-800/60 px-2 py-0.5 rounded-md">Dinámica de Sistemas</span>
+            <span class="text-slate-500">Nivel Medio</span>
+          </div>
+          <h3 class="text-lg font-bold text-slate-100 group-hover:text-indigo-300 transition">
+            El Altar de los OpAmps
+          </h3>
+          <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+            Aprende a sumar y promediar voltajes con cables virtuales tal como se hacía en la computación analógica clásica. ¡Cuidado con saturar los rieles a ±12V!
+          </p>
+        </div>
+        <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+          <span class="text-[11px] font-mono-tech text-slate-400">⚡ Simulación Activa</span>
+          <button onclick="abrirVisor('ritos/opamps-analogica.html', 'Laboratorio de Computación Analógica')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold font-mono-tech transition shadow-md shadow-indigo-600/20">
+            Abrir Rito ➔
+          </button>
+        </div>
+      </div>
+
+      <!-- Tarjeta 2: SpaceX / Control -->
+      <div class="sim-card control group relative bg-slate-900/60 hover:bg-slate-900/90 border border-slate-800 hover:border-amber-500/60 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-500/10">
+        <div>
+          <div class="flex items-center justify-between text-[11px] font-mono-tech mb-3">
+            <span class="text-amber-400 font-bold bg-amber-950/60 border border-amber-800/60 px-2 py-0.5 rounded-md">Control Automático</span>
+            <span class="text-slate-500">Multinivel</span>
+          </div>
+          <h3 class="text-lg font-bold text-slate-100 group-hover:text-amber-300 transition">
+            Falcon Landing 1D
+          </h3>
+          <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+            ¿Confías más en tus reflejos humanos o en un algoritmo con radar? Intenta aterrizar el propulsor en Lazo Abierto y luego comprueba la estabilidad del Lazo Cerrado.
+          </p>
+        </div>
+        <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+          <span class="text-[11px] font-mono-tech text-slate-400">🚀 Telemetría 1D</span>
+          <button onclick="abrirVisor('ritos/spacex-control.html', 'Falcon Landing 1D: Lazo Abierto vs Lazo Cerrado')" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold font-mono-tech transition shadow-md shadow-amber-600/20">
+            Abrir Rito ➔
+          </button>
+        </div>
+      </div>
+
+      <!-- Tarjeta 3: Domo 7 / Ética -->
+      <div class="sim-card etica group relative bg-slate-900/60 hover:bg-slate-900/90 border border-slate-800 hover:border-cyan-500/60 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-500/10">
+        <div>
+          <div class="flex items-center justify-between text-[11px] font-mono-tech mb-3">
+            <span class="text-cyan-400 font-bold bg-cyan-950/60 border border-cyan-800/60 px-2 py-0.5 rounded-md">Taller de Ética</span>
+            <span class="text-slate-500">1er Semestre</span>
+          </div>
+          <h3 class="text-lg font-bold text-slate-100 group-hover:text-cyan-300 transition">
+            El Consejo del Domo 7
+          </h3>
+          <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+            Un refugio subterráneo con recursos escasos. Vota decisiones límite junto al grupo y descubre si tus juicios defienden la dignidad o provocan la anarquía.
+          </p>
+        </div>
+        <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+          <span class="text-[11px] font-mono-tech text-slate-400">⚖️ Debate en Vivo</span>
+          <button onclick="abrirVisor('ritos/domo7-etica.html', 'Protocolo Éxodo: El Consejo del Domo 7')" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold font-mono-tech transition shadow-md shadow-cyan-600/20">
+            Abrir Rito ➔
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Visor Flotante Pantalla Completa (Evita que vean código o salgan de la web) -->
+  <div id="visor-modal" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col">
+    <!-- Barra superior del visor -->
+    <div class="bg-slate-950 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button onclick="cerrarVisor()" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-mono-tech border border-slate-700 transition flex items-center gap-1.5">
+          <span>←</span> <span>Volver al Códice</span>
+        </button>
+        <span class="text-slate-600">|</span>
+        <span id="visor-titulo" class="text-xs md:text-sm font-mono-tech text-amber-300 font-bold">Simulador Activo</span>
+      </div>
+      <div class="text-[11px] font-mono-tech text-slate-500 hidden sm:block">
+        Red Malagoniana // Enlace Estable
+      </div>
+    </div>
+    <!-- Contenedor del Iframe -->
+    <div class="flex-1 w-full h-full bg-slate-900 relative">
+      <iframe id="visor-frame" src="" class="w-full h-full border-none"></iframe>
+    </div>
+  </div>
+
+  <script>
+    function abrirVisor(ruta, titulo) {
+      document.getElementById('visor-titulo').innerText = titulo;
+      document.getElementById('visor-frame').src = ruta;
+      document.getElementById('visor-modal').classList.remove('hidden');
+    }
+
+    function cerrarVisor() {
+      document.getElementById('visor-modal').classList.add('hidden');
+      document.getElementById('visor-frame').src = ''; // Detiene audio/física al cerrar
+    }
+
+    function filtrar(categoria) {
+      const cards = document.querySelectorAll('.sim-card');
+      const btns = document.querySelectorAll('.filter-btn');
+
+      btns.forEach(b => {
+        b.className = 'filter-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition';
+      });
+      event.target.className = 'filter-btn active px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold transition';
+
+      cards.forEach(card => {
+        if (categoria === 'todos' || card.classList.contains(categoria)) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>
