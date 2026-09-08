@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio de Computación Analógica | Dinámica de Sistemas</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- KaTeX CDN para renderizado matemático nítido -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                        vpos: '#dc2626', // Rojo voltaje positivo
+                        vneg: '#0f172a', // Negro voltaje negativo
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Dot grid canvas background */
+        .canvas-grid {
+            background-color: #f8fafc;
+            background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
+            background-size: 24px 24px;
+        }
+
+        /* Prevent text selection when dragging */
+        .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Terminal connection pins */
+        .circuit-port {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease;
+            cursor: crosshair;
+        }
+        .circuit-port:hover {
+            transform: scale(1.4);
+            box-shadow: 0 0 10px rgba(37, 99, 235, 0.6);
+        }
+
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Number input spinner styling */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            opacity: 1;
+        }
+
+        /* SVG Wire animations */
+        .wire-flow {
+            stroke-dasharray: 8, 8;
+            animation: wireDash 1.2s linear infinite;
+        }
+        @keyframes wireDash {
+            to {
+                stroke-dashoffset: -16;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans h-screen w-screen overflow-hidden flex flex-col no-select">
+
+    <!-- Encabezado Principal Widescreen -->
+    <header class="bg-white border-b border-slate-200 px-6 py-2.5 flex items-center justify-between shadow-sm z-30 flex-shrink-0">
+        <div class="flex items-center space-x-4">
+            <div class="bg-gradient-to-br from-indigo-700 to-blue-600 text-white p-2.5 rounded-xl shadow-md flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                </svg>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h1 class="text-lg font-bold text-slate-900 tracking-tight">Laboratorio Virtual de Dinámica de Sistemas</h1>
+                    <span class="text-xs bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 rounded-full border border-indigo-200">U1: Modelado con OpAmps</span>
+                </div>
+                <!-- Tarjeta de autoría solicitada -->
+                <div class="flex items-center space-x-2 text-xs text-slate-500 mt-0.5">
+                    <span class="font-medium text-slate-700">Creado por:</span>
+                    <span class="font-semibold text-indigo-900">Brandon Daniel Malagón Rodríguez</span>
+                    <span class="text-slate-300">|</span>
+                    <span>Profesor de Asignatura B</span>
+                    <span class="text-slate-300">|</span>
+                    <span class="text-slate-600 font-medium">Tecnológico Superior de Jalisco, Chapala</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controles Centrales / Modos -->
+        <div class="flex items-center space-x-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button id="btn-mode-sandbox" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 bg-white text-slate-800 shadow-sm border border-slate-200/60">
+                🛠️ Modo Libre (Sandbox)
+            </button>
+            <button id="btn-mode-challenges" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 text-slate-600 hover:text-slate-900">
+                🎯 Modo Desafíos
+            </button>
+            <button id="btn-load-preset" class="px-3 py-1.5 text-xs font-medium rounded-lg text-indigo-700 hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition-colors">
+                ⚡ Cargar Promediador Simple
+            </button>
+            <button id="btn-tidy-canvas" class="px-3 py-1.5 text-xs font-medium rounded-lg text-slate-700 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200 transition-all flex items-center space-x-1" title="Alinear y ordenar los bloques en el lienzo">
+                <span>📐 Auto-organizar</span>
+            </button>
+        </div>
+
+        <!-- Convención de Colores y Utilidades -->
+        <div class="flex items-center space-x-5 text-xs font-medium">
+            <div class="flex items-center space-x-3 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 shadow-inner">
+                <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Leyes de color:</span>
+                <span class="flex items-center space-x-1 font-mono font-semibold text-red-600">
+                    <span class="w-3 h-3 rounded-full bg-red-600 shadow-sm inline-block"></span>
+                    <span>+V (Positivo)</span>
+                </span>
+                <span class="flex items-center space-x-1 font-mono font-semibold text-slate-900">
+                    <span class="w-3 h-3 rounded-full bg-slate-900 shadow-sm inline-block"></span>
+                    <span>-V (Negativo)</span>
+                </span>
+            </div>
+
+            <button id="btn-clear-canvas" class="text-slate-600 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 border border-transparent hover:border-red-200 transition-colors" title="Limpiar Lienzo">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Panel contextual para retos (Ocultable) -->
+    <div id="challenge-panel" class="hidden bg-gradient-to-r from-indigo-900 via-blue-900 to-slate-900 text-white px-6 py-3 border-b border-indigo-700/50 shadow-inner flex items-center justify-between z-20 transition-all">
+        <div class="flex items-center space-x-6">
+            <div class="flex items-center space-x-2">
+                <span class="text-xs uppercase tracking-widest font-black bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 px-2.5 py-1 rounded-md">Reto Actual</span>
+                <select id="challenge-select" class="bg-slate-800 text-white text-xs font-semibold rounded-lg px-3 py-1.5 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                    <option value="0">Desafío 1: Promedio Simple de 3 Entradas (V_out = (V1 + V2 + V3)/3)</option>
+                    <option value="1">Desafío 2: Promedio Ponderado 50% - 30% - 20%</option>
+                    <option value="2">Desafío 3: Filtro Ponderado Asimétrico 60% - 25% - 15%</option>
+                    <option value="3">Desafío 4: Operación sin Saturación en Rieles (±12V)</option>
+                </select>
+            </div>
+            <div class="text-xs text-indigo-100 flex items-center space-x-2">
+                <span class="font-bold text-amber-300">Meta:</span>
+                <span id="challenge-target-text" class="font-mono bg-black/40 px-3 py-1 rounded border border-white/10 text-emerald-300 font-semibold">V_out = (V1 + V2 + V3) / 3</span>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button id="btn-challenge-hint" class="bg-indigo-700/80 hover:bg-indigo-600 text-indigo-100 text-xs font-semibold px-3 py-1.5 rounded-lg border border-indigo-500/40 flex items-center space-x-1.5 transition-colors">
+                <span>💡 Pista Teórica</span>
+            </button>
+            <div class="text-right text-xs">
+                <div class="text-slate-300 text-[11px]">Error en medición:</div>
+                <div id="challenge-error-val" class="font-mono font-bold text-emerald-400">0.00%</div>
+            </div>
+            <button id="btn-eval-challenge" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2 transition-transform active:scale-95">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Validar Circuito</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Contenedor de Área de Trabajo Widescreen -->
+    <div class="flex-1 relative flex overflow-hidden">
+
+        <!-- Barra Lateral de Componentes (Bloques disponibles) -->
+        <aside class="w-64 bg-white border-r border-slate-200 flex flex-col justify-between z-20 shadow-sm flex-shrink-0">
+            <div class="p-4 overflow-y-auto space-y-4">
+                <div class="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <span>Bloques de Entrada</span>
+                </div>
+
+                <!-- Botón Añadir Potenciómetro -->
+                <button onclick="createNode('potentiometer')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:shadow-md bg-white hover:bg-indigo-50/30 transition-all flex items-start space-x-3 group">
+                    <div class="p-2 bg-amber-50 rounded-lg text-amber-600 group-hover:bg-amber-100 transition-colors border border-amber-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-800">Potenciómetro DC</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">Rango de -12V a +12V continuo.</div>
+                    </div>
+                </button>
+
+                <div class="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider pt-2">
+                    <span>Bloques Operacionales</span>
+                </div>
+
+                <!-- Botón Añadir Amp. Inversor -->
+                <button onclick="createNode('inverting_amp')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:shadow-md bg-white hover:bg-indigo-50/30 transition-all flex items-start space-x-3 group">
+                    <div class="p-2 bg-indigo-50 rounded-lg text-indigo-600 group-hover:bg-indigo-100 transition-colors border border-indigo-200 font-mono text-sm font-black">
+                        -A
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-800">Amplificador Inversor</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">Escala e invierte la señal:<br><span class="font-mono text-[10px] text-indigo-600">Vo = -(Rf/Rin) · Vi</span></div>
+                    </div>
+                </button>
+
+                <!-- Botón Añadir Sumador Inversor -->
+                <button onclick="createNode('summing_amp')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:shadow-md bg-white hover:bg-indigo-50/30 transition-all flex items-start space-x-3 group">
+                    <div class="p-2 bg-blue-50 rounded-lg text-blue-600 group-hover:bg-blue-100 transition-colors border border-blue-200 font-mono text-sm font-black">
+                        -Σ
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-800">Sumador Inversor (3 In)</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">Suma ponderada invertida:<br><span class="font-mono text-[10px] text-blue-600">Vo = -Rf Σ(Vi / Ri)</span></div>
+                    </div>
+                </button>
+
+                <div class="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider pt-2">
+                    <span>Medición y Análisis</span>
+                </div>
+
+                <!-- Botón Añadir Voltímetro -->
+                <button onclick="createNode('voltmeter')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-emerald-400 hover:shadow-md bg-white hover:bg-emerald-50/30 transition-all flex items-start space-x-3 group">
+                    <div class="p-2 bg-emerald-50 rounded-lg text-emerald-600 group-hover:bg-emerald-100 transition-colors border border-emerald-200 font-mono text-sm font-bold">
+                        [V]
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-800">Voltímetro Digital</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">Mide y compara con el modelo de referencia.</div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Pie de la barra lateral con notas pedagógicas -->
+            <div class="p-3.5 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-600 space-y-2">
+                <div class="font-bold text-slate-800 flex items-center space-x-1">
+                    <svg class="w-3.5 h-3.5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Guía Rápida</span>
+                </div>
+                <p class="leading-relaxed">
+                    1. Une pines de salida (<span class="font-bold text-blue-600">azul</span>) con pines de entrada (<span class="font-bold text-slate-700">gris</span>).
+                </p>
+                <p class="leading-relaxed">
+                    2. Los OpAmps saturan a <span class="font-mono font-bold text-red-600">±12.00 V</span>.
+                </p>
+                <p class="leading-relaxed">
+                    3. Haz clic sobre un cable para cortarlo.
+                </p>
+            </div>
+        </aside>
+
+        <!-- Lienzo de trabajo interactivo (Canvas SVG + Bloques DOM) -->
+        <main id="canvas-container" class="flex-1 relative canvas-grid overflow-hidden cursor-default">
+            <!-- Capa SVG para cables vectoriales y animaciones de flujo -->
+            <svg id="wires-svg" class="absolute inset-0 w-full h-full pointer-events-none z-10">
+                <defs>
+                    <!-- Filtro sutil de resplandor -->
+                    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.25"/>
+                    </filter>
+                </defs>
+                <!-- Grupo para cables fijos interactivos (tienen pointer-events para clics) -->
+                <g id="wires-layer" class="pointer-events-auto"></g>
+                <!-- Línea provisional mientras el usuario arrastra un cable -->
+                <path id="temp-wire" d="" fill="none" stroke="#2563eb" stroke-width="3" stroke-dasharray="6,6" class="hidden" />
+            </svg>
+
+            <!-- Tooltip flotante al inspeccionar cables (reemplaza las pastillas estáticas que se cruzaban) -->
+            <div id="wire-tooltip" class="fixed hidden pointer-events-none z-50 bg-slate-900/95 text-white font-mono text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow-xl border border-slate-700 backdrop-blur-sm transition-opacity duration-150"></div>
+
+            <!-- Contenedor de Bloques DOM -->
+            <div id="nodes-container" class="absolute inset-0 z-20 pointer-events-none">
+                <!-- Los bloques se inyectan dinámicamente aquí -->
+            </div>
+
+            <!-- Guía flotante de atajos -->
+            <div class="absolute bottom-4 right-4 z-20 bg-white/90 backdrop-blur-md border border-slate-300 rounded-xl px-4 py-2 text-[11px] text-slate-500 shadow-lg flex items-center space-x-3 pointer-events-auto">
+                <span>⚡ Clic en pin para conectar</span>
+                <span class="text-slate-300">|</span>
+                <span>🖱️ Arrastra encabezado para mover bloque</span>
+                <span class="text-slate-300">|</span>
+                <span>✂️ Clic en cable para eliminar</span>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal para Notificaciones y Éxito de Reto (Reemplazo estricto de alert()) -->
+    <div id="modal-container" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full mx-4 p-6 transform scale-95 transition-transform duration-200" id="modal-box">
+            <div class="text-center">
+                <div id="modal-icon-container" class="w-14 h-14 mx-auto rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <h3 id="modal-title" class="text-lg font-bold text-slate-900 mb-1">¡Desafío Resuelto!</h3>
+                <p id="modal-message" class="text-sm text-slate-600 mb-6 leading-relaxed">
+                    Has sintetizado con éxito el modelo analógico del promedio con precisión exacta.
+                </p>
+                <div class="flex justify-center space-x-3">
+                    <button onclick="closeModal()" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs shadow-md transition-colors">
+                        Continuar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            nodes: [],
+            connections: [],
+            activeWire: null,
+            nextNodeId: 1,
+            isChallengeMode: false,
+            currentChallengeIdx: 0,
+            challenges: [
+                {
+                    title: "Promedio Simple de 3 Entradas",
+                    formula: "V_{out} = \\frac{V_1 + V_2 + V_3}{3}",
+                    description: "Conecta 3 potenciómetros y calcula el promedio aritmético exacto usando el sumador y/o amplificadores inversores.",
+                    hint: "En el promedio simple, cada entrada tiene un peso de 1/3 (≈ 0.333). Puedes lograrlo haciendo un sumador unitario (Rf=10k, R1=R2=R3=10k) seguido de un inversor con ganancia 1/3 (Rin=30k, Rf=10k).",
+                    tolerance: 0.05,
+                    check: (pots, vOut) => {
+                        const expected = (pots[0] + pots[1] + pots[2]) / 3;
+                        return { ok: Math.abs(vOut - expected) < 0.15, expected, actual: vOut };
+                    }
+                },
+                {
+                    title: "Promedio Ponderado 50% - 30% - 20%",
+                    formula: "V_{out} = 0.50 V_1 + 0.30 V_2 + 0.20 V_3",
+                    description: "Ajusta las relaciones de resistencias de entrada para que cada potenciómetro tenga el peso especificado (α1 = 0.5, α2 = 0.3, α3 = 0.2).",
+                    hint: "Recuerda que la ganancia de cada canal es Rf / Ri. ¡La resistencia va en el DENOMINADOR! Por lo tanto, a MAYOR peso le corresponde MENOR resistencia: Ri = Rf / αi. Si fijas Rf = 30 kΩ, entonces R1 = 30/0.5 = 60 kΩ, R2 = 30/0.3 = 100 kΩ y R3 = 30/0.2 = 150 kΩ. Recuerda además que la segunda etapa debe ser un inversor unitario (Rin = 10 kΩ, Rf = 10 kΩ) para no alterar los pesos.",
+                    tolerance: 0.05,
+                    check: (pots, vOut) => {
+                        const expected = 0.5 * pots[0] + 0.3 * pots[1] + 0.2 * pots[2];
+                        return { ok: Math.abs(vOut - expected) < 0.15, expected, actual: vOut };
+                    }
+                },
+                {
+                    title: "Promedio Ponderado Asimétrico",
+                    formula: "V_{out} = 0.60 V_1 + 0.25 V_2 + 0.15 V_3",
+                    description: "Sintetiza un modelo dinámico donde el potenciómetro 1 domina con el 60% del peso en la salida.",
+                    hint: "Aplica la relación Ri = Rf / αi. Si fijas Rf = 30 kΩ: R1 = 30/0.60 = 50 kΩ, R2 = 30/0.25 = 120 kΩ y R3 = 30/0.15 = 200 kΩ. Con un inversor final de ganancia 1 (Rin = Rf = 10 kΩ).",
+                    tolerance: 0.05,
+                    check: (pots, vOut) => {
+                        const expected = 0.60 * pots[0] + 0.25 * pots[1] + 0.15 * pots[2];
+                        return { ok: Math.abs(vOut - expected) < 0.15, expected, actual: vOut };
+                    }
+                },
+                {
+                    title: "Operación Sin Saturación",
+                    formula: "V_{out} = 0.33 (V_1 + V_2 + V_3)",
+                    description: "Asegúrate de que ninguna etapa intermedia sature (±12V) cuando los potenciómetros estén en sus valores de operación.",
+                    hint: "Si sumas voltajes altos primero, la salida intermedia puede superar ±12V y recortarse. Ajusta las ganancias para mantener las señales intermedias dentro de rango antes de la suma final.",
+                    tolerance: 0.05,
+                    check: (pots, vOut, nodes) => {
+                        const expected = (pots[0] + pots[1] + pots[2]) / 3;
+                        const anySaturated = nodes.some(n => n.type !== 'potentiometer' && n.isSaturated);
+                        return { ok: !anySaturated && Math.abs(vOut - expected) < 0.15, expected, actual: vOut, extra: anySaturated ? "Existe saturación en una etapa intermedia." : null };
+                    }
+                }
+            ]
+        };
+
+        const V_SAT = 12.00;
+
+        function getVoltageColor(voltage) {
+            if (voltage === undefined || voltage === null || isNaN(voltage)) return '#94a3b8';
+            if (voltage > 0.04) {
+                return '#dc2626'; // Rojo positivo (+V)
+            } else if (voltage < -0.04) {
+                return '#0f172a'; // Negro negativo (-V)
+            } else {
+                return '#475569'; // Tensión nula (0V)
+            }
+        }
+
+        function getVoltageBgClass(voltage) {
+            if (voltage === undefined || isNaN(voltage)) return 'bg-slate-100 text-slate-600 border-slate-300';
+            if (voltage > 0.04) return 'bg-red-50 text-red-700 border-red-300';
+            if (voltage < -0.04) return 'bg-slate-900 text-white border-slate-950';
+            return 'bg-slate-100 text-slate-700 border-slate-300';
+        }
+
+        function renderKaTeX(id, latex) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (window.katex) {
+                try {
+                    window.katex.render(latex, el, { throwOnError: false, displayMode: false });
+                    return;
+                } catch(e) {}
+            }
+            el.textContent = latex;
+        }
+
+        function createNode(type, x, y, customProps = {}) {
+            const id = 'node_' + state.nextNodeId++;
+            const defaultPositions = {
+                'potentiometer': { x: 50, y: 80 + (state.nodes.length % 3) * 170 },
+                'inverting_amp': { x: 480, y: 150 },
+                'summing_amp': { x: 480, y: 120 },
+                'voltmeter': { x: 920, y: 180 }
+            };
+
+            const posX = x !== undefined ? x : (defaultPositions[type]?.x || 100);
+            const posY = y !== undefined ? y : (defaultPositions[type]?.y || 100);
+
+            const node = {
+                id,
+                type,
+                x: posX,
+                y: posY,
+                voltage: 0.0,
+                isSaturated: false,
+                ports: {},
+                params: {}
+            };
+
+            if (type === 'potentiometer') {
+                node.params = {
+                    val: customProps.val !== undefined ? customProps.val : 6.0
+                };
+                node.ports = {
+                    out: { id: `${id}_out`, type: 'out', label: 'V_out' }
+                };
+            } else if (type === 'inverting_amp') {
+                node.params = {
+                    rin: customProps.rin || 10,
+                    rf: customProps.rf || 10
+                };
+                node.ports = {
+                    in: { id: `${id}_in`, type: 'in', label: 'Vin' },
+                    out: { id: `${id}_out`, type: 'out', label: 'Vout' }
+                };
+            } else if (type === 'summing_amp') {
+                node.params = {
+                    r1: customProps.r1 || 10,
+                    r2: customProps.r2 || 10,
+                    r3: customProps.r3 || 10,
+                    rf: customProps.rf || 10
+                };
+                node.ports = {
+                    in1: { id: `${id}_in1`, type: 'in', label: 'V1' },
+                    in2: { id: `${id}_in2`, type: 'in', label: 'V2' },
+                    in3: { id: `${id}_in3`, type: 'in', label: 'V3' },
+                    out: { id: `${id}_out`, type: 'out', label: 'Vout' }
+                };
+            } else if (type === 'voltmeter') {
+                node.ports = {
+                    in: { id: `${id}_in`, type: 'in', label: 'In' }
+                };
+            }
+
+            state.nodes.push(node);
+            renderNodeDOM(node);
+            evaluateCircuit();
+            return node;
+        }
+
+        function renderNodeDOM(node) {
+            const container = document.getElementById('nodes-container');
+            const el = document.createElement('div');
+            el.id = node.id;
+            el.className = 'absolute pointer-events-auto bg-white rounded-2xl shadow-lg border border-slate-200/90 transition-shadow duration-200 w-80';
+            el.style.transform = `translate(${node.x}px, ${node.y}px)`;
+
+            let contentHTML = '';
+
+            if (node.type === 'potentiometer') {
+                contentHTML = `
+                    <div class="p-3 bg-gradient-to-r from-amber-500 to-amber-600 rounded-t-2xl text-white flex items-center justify-between cursor-move drag-handle">
+                        <span class="text-xs font-bold tracking-wide flex items-center space-x-1.5">
+                            <span>🎚️ Potenciómetro DC</span>
+                        </span>
+                        <button onclick="removeNode('${node.id}')" class="text-amber-100 hover:text-white transition-colors">✕</button>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-slate-500 font-medium">Tensión:</span>
+                            <div class="flex items-center space-x-1">
+                                <button type="button" onclick="stepPot('${node.id}', -0.5)" class="w-6 h-6 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold text-xs" title="-0.5V">-</button>
+                                <input type="number" id="${node.id}_num" min="-12" max="12" step="0.1" value="${node.params.val.toFixed(2)}"
+                                    onchange="onPotNumberChange('${node.id}', this.value)"
+                                    oninput="onPotNumberChange('${node.id}', this.value)"
+                                    class="w-20 text-center font-mono font-bold text-sm px-1.5 py-0.5 rounded-lg border ${getVoltageBgClass(node.params.val)} focus:outline-none focus:ring-2 focus:ring-amber-400">
+                                <span class="font-mono text-xs font-bold text-slate-500">V</span>
+                                <button type="button" onclick="stepPot('${node.id}', 0.5)" class="w-6 h-6 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold text-xs" title="+0.5V">+</button>
+                            </div>
+                        </div>
+                        <input type="range" id="${node.id}_slider" min="-12" max="12" step="0.1" value="${node.params.val}"
+                            oninput="updatePotentiometer('${node.id}', this.value)"
+                            class="w-full accent-amber-500 cursor-pointer h-2 bg-slate-200 rounded-lg">
+                        <div class="flex justify-between text-[10px] text-slate-400 font-mono">
+                            <span>-12.0 V</span>
+                            <span>0.0 V</span>
+                            <span>+12.0 V</span>
+                        </div>
+                        <div class="pt-2 flex justify-end items-center border-t border-slate-100">
+                            <span class="text-[11px] font-semibold text-slate-500 mr-2">Salida Vo</span>
+                            <div id="${node.id}_out" data-node="${node.id}" data-port="out" data-type="out"
+                                class="circuit-port bg-blue-600 border-2 border-white shadow-sm" title="Pin Salida"></div>
+                        </div>
+                    </div>
+                `;
+            } else if (node.type === 'inverting_amp') {
+                contentHTML = `
+                    <div class="p-3 bg-gradient-to-r from-indigo-700 to-indigo-800 rounded-t-2xl text-white flex items-center justify-between cursor-move drag-handle">
+                        <span class="text-xs font-bold flex items-center space-x-1.5">
+                            <span>⚡ Amp. Inversor</span>
+                            <span id="${node.id}_sat_badge" class="hidden text-[10px] bg-red-500 text-white font-black px-1.5 py-0.2 rounded">SATURADO</span>
+                        </span>
+                        <button onclick="removeNode('${node.id}')" class="text-indigo-200 hover:text-white">✕</button>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <!-- Ecuación Teórica KaTeX -->
+                        <div class="bg-slate-50 p-2 rounded-xl border border-slate-200 text-center">
+                            <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Modelo Analítico</div>
+                            <div id="${node.id}_theory_math" class="text-xs text-indigo-900 font-semibold py-0.5 min-h-[22px]"></div>
+                        </div>
+
+                        <!-- Ecuación Evaluada en tiempo real -->
+                        <div class="bg-indigo-50/70 p-2 rounded-xl border border-indigo-100 text-center">
+                            <div class="text-[9px] text-indigo-500 font-bold uppercase tracking-wider mb-0.5">Cálculo en vivo</div>
+                            <div id="${node.id}_eval_math" class="text-xs text-indigo-950 font-bold py-0.5 min-h-[22px]"></div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                                <label class="text-[10px] text-slate-500 font-semibold uppercase">Rin (kΩ)</label>
+                                <input type="number" min="0.1" max="1000" step="0.5" value="${node.params.rin}"
+                                    onchange="updateAmpParam('${node.id}', 'rin', this.value)"
+                                    class="w-full mt-1 border border-slate-200 rounded-lg p-1.5 font-mono text-center font-bold focus:ring-1 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-500 font-semibold uppercase">Rf (kΩ)</label>
+                                <input type="number" min="0.1" max="1000" step="0.5" value="${node.params.rf}"
+                                    onchange="updateAmpParam('${node.id}', 'rf', this.value)"
+                                    class="w-full mt-1 border border-slate-200 rounded-lg p-1.5 font-mono text-center font-bold focus:ring-1 focus:ring-indigo-500">
+                            </div>
+                        </div>
+
+                        <!-- Conexión y Medición en puerto Vin (Evita pastillas cruzadas en cables) -->
+                        <div class="flex items-center justify-between border-t border-slate-100 pt-2.5">
+                            <div class="flex items-center space-x-2">
+                                <div id="${node.id}_in" data-node="${node.id}" data-port="in" data-type="in"
+                                    class="circuit-port bg-slate-400 border-2 border-white" title="Entrada Vin"></div>
+                                <span class="text-[10px] font-mono text-slate-600 font-bold">Vin</span>
+                                <span id="${node.id}_in_val" class="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 border border-slate-200">--</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-[10px] font-mono text-slate-500 font-bold">Vout</span>
+                                <div id="${node.id}_out" data-node="${node.id}" data-port="out" data-type="out"
+                                    class="circuit-port bg-blue-600 border-2 border-white" title="Salida Vout"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (node.type === 'summing_amp') {
+                contentHTML = `
+                    <div class="p-3 bg-gradient-to-r from-blue-700 to-cyan-800 rounded-t-2xl text-white flex items-center justify-between cursor-move drag-handle">
+                        <span class="text-xs font-bold flex items-center space-x-1.5">
+                            <span>🎛️ Sumador Inversor (3 In)</span>
+                            <span id="${node.id}_sat_badge" class="hidden text-[10px] bg-red-500 text-white font-black px-1.5 py-0.2 rounded">SATURADO</span>
+                        </span>
+                        <button onclick="removeNode('${node.id}')" class="text-blue-100 hover:text-white">✕</button>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <!-- Ecuación Teórica KaTeX -->
+                        <div class="bg-slate-50 p-2 rounded-xl border border-slate-200 text-center">
+                            <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Modelo Analítico</div>
+                            <div id="${node.id}_theory_math" class="text-xs text-blue-900 font-semibold py-0.5 min-h-[22px]"></div>
+                        </div>
+
+                        <!-- Ecuación Evaluada en tiempo real -->
+                        <div class="bg-blue-50/70 p-2 rounded-xl border border-blue-100 text-center">
+                            <div class="text-[9px] text-blue-500 font-bold uppercase tracking-wider mb-0.5">Cálculo en vivo</div>
+                            <div id="${node.id}_eval_math" class="text-xs text-blue-950 font-bold py-0.5 min-h-[22px]"></div>
+                        </div>
+
+                        <!-- Rf Feedback -->
+                        <div class="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-200">
+                            <span class="text-[11px] font-bold text-slate-700">Rf (Feedback):</span>
+                            <div class="flex items-center space-x-1">
+                                <input type="number" min="0.1" max="1000" step="0.5" value="${node.params.rf}"
+                                    onchange="updateSumParam('${node.id}', 'rf', this.value)"
+                                    class="w-16 border border-slate-200 rounded p-1 font-mono text-center font-bold text-xs">
+                                <span class="text-[10px] text-slate-500 font-mono">kΩ</span>
+                            </div>
+                        </div>
+
+                        <!-- Entradas con medición en puerto y resistencia Ri -->
+                        <div class="space-y-2">
+                            <!-- Entrada 1 -->
+                            <div class="flex items-center justify-between bg-slate-50/50 p-1.5 rounded-lg border border-slate-100">
+                                <div class="flex items-center space-x-1.5">
+                                    <div id="${node.id}_in1" data-node="${node.id}" data-port="in1" data-type="in"
+                                        class="circuit-port bg-slate-400 border-2 border-white" title="Entrada 1"></div>
+                                    <span class="text-[10px] font-mono text-slate-600 font-bold">In 1</span>
+                                    <span id="${node.id}_in1_val" class="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-white text-slate-400 border border-slate-200">--</span>
+                                </div>
+                                <div class="flex items-center space-x-1">
+                                    <span class="text-[10px] text-slate-400">R1:</span>
+                                    <input type="number" min="0.1" max="1000" step="0.5" value="${node.params.r1}"
+                                        onchange="updateSumParam('${node.id}', 'r1', this.value)"
+                                        class="w-14 border border-slate-200 rounded p-1 font-mono text-center font-bold text-xs">
+                                    <span class="text-[9px] text-slate-400">kΩ</span>
+                                </div>
+                            </div>
+                            <!-- Entrada 2 -->
+                            <div class="flex items-center justify-between bg-slate-50/50 p-1.5 rounded-lg border border-slate-100">
+                                <div class="flex items-center space-x-1.5">
+                                    <div id="${node.id}_in2" data-node="${node.id}" data-port="in2" data-type="in"
+                                        class="circuit-port bg-slate-400 border-2 border-white" title="Entrada 2"></div>
+                                    <span class="text-[10px] font-mono text-slate-600 font-bold">In 2</span>
+                                    <span id="${node.id}_in2_val" class="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-white text-slate-400 border border-slate-200">--</span>
+                                </div>
+                                <div class="flex items-center space-x-1">
+                                    <span class="text-[10px] text-slate-400">R2:</span>
+                                    <input type="number" min="0.1" max="1000" step="0.5" value="${node.params.r2}"
+                                        onchange="updateSumParam('${node.id}', 'r2', this.value)"
+                                        class="w-14 border border-slate-200 rounded p-1 font-mono text-center font-bold text-xs">
+                                    <span class="text-[9px] text-slate-400">kΩ</span>
+                                </div>
+                            </div>
+                            <!-- Entrada 3 -->
+                            <div class="flex items-center justify-between bg-slate-50/50 p-1.5 rounded-lg border border-slate-100">
+                                <div class="flex items-center space-x-1.5">
+                                    <div id="${node.id}_in3" data-node="${node.id}" data-port="in3" data-type="in"
+                                        class="circuit-port bg-slate-400 border-2 border-white" title="Entrada 3"></div>
+                                    <span class="text-[10px] font-mono text-slate-600 font-bold">In 3</span>
+                                    <span id="${node.id}_in3_val" class="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-white text-slate-400 border border-slate-200">--</span>
+                                </div>
+                                <div class="flex items-center space-x-1">
+                                    <span class="text-[10px] text-slate-400">R3:</span>
+                                    <input type="number" min="0.1" max="1000" step="0.5" value="${node.params.r3}"
+                                        onchange="updateSumParam('${node.id}', 'r3', this.value)"
+                                        class="w-14 border border-slate-200 rounded p-1 font-mono text-center font-bold text-xs">
+                                    <span class="text-[9px] text-slate-400">kΩ</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Salida Vo -->
+                        <div class="flex items-center justify-end space-x-2 border-t border-slate-100 pt-2">
+                            <span class="text-[11px] font-bold text-blue-900">Salida Vo</span>
+                            <div id="${node.id}_out" data-node="${node.id}" data-port="out" data-type="out"
+                                class="circuit-port bg-blue-600 border-2 border-white" title="Salida Vout"></div>
+                        </div>
+                    </div>
+                `;
+            } else if (node.type === 'voltmeter') {
+                contentHTML = `
+                    <div class="p-3 bg-gradient-to-r from-emerald-600 to-teal-700 rounded-t-2xl text-white flex items-center justify-between cursor-move drag-handle">
+                        <span class="text-xs font-bold flex items-center space-x-1.5">
+                            <span>📟 Voltímetro de Señal</span>
+                        </span>
+                        <button onclick="removeNode('${node.id}')" class="text-emerald-100 hover:text-white">✕</button>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <div class="text-center py-2 bg-slate-900 rounded-xl border border-slate-800 shadow-inner">
+                            <span class="text-[10px] text-slate-400 block font-sans tracking-wide">TENSIÓN MEDIDA</span>
+                            <span id="${node.id}_reading" class="font-mono text-2xl font-black text-emerald-400 tracking-wider">
+                                0.00 V
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between border-t border-slate-100 pt-2.5">
+                            <div class="flex items-center space-x-2">
+                                <div id="${node.id}_in" data-node="${node.id}" data-port="in" data-type="in"
+                                    class="circuit-port bg-slate-400 border-2 border-white" title="Pin Sonda"></div>
+                                <span class="text-[11px] font-semibold text-slate-600">Sonda In (+)</span>
+                            </div>
+                            <span class="text-[10px] text-slate-400 font-mono">Ref. 0V</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            el.innerHTML = contentHTML;
+            container.appendChild(el);
+
+            attachDragToNode(el, node);
+            attachPortEvents(el, node);
+        }
+
+        function attachDragToNode(el, node) {
+            const handle = el.querySelector('.drag-handle');
+            let isDragging = false;
+            let startX, startY;
+
+            const onMouseDown = (e) => {
+                if (e.target.tagName === 'BUTTON' || e.target.classList.contains('circuit-port')) return;
+                isDragging = true;
+                startX = e.clientX - node.x;
+                startY = e.clientY - node.y;
+                el.style.zIndex = 30;
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            };
+
+            const onMouseMove = (e) => {
+                if (!isDragging) return;
+                const canvasRect = document.getElementById('canvas-container').getBoundingClientRect();
+                node.x = Math.max(10, Math.min(canvasRect.width - 320, e.clientX - startX));
+                node.y = Math.max(10, Math.min(canvasRect.height - 270, e.clientY - startY));
+                el.style.transform = `translate(${node.x}px, ${node.y}px)`;
+                renderWires();
+            };
+
+            const onMouseUp = () => {
+                isDragging = false;
+                el.style.zIndex = 20;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+
+            handle.addEventListener('mousedown', onMouseDown);
+        }
+
+        function attachPortEvents(el, node) {
+            const ports = el.querySelectorAll('.circuit-port');
+            ports.forEach(portEl => {
+                portEl.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    const portType = portEl.dataset.type;
+                    const portId = portEl.id;
+                    const nodeId = portEl.dataset.node;
+
+                    startWiring(nodeId, portId, portType, e);
+                });
+            });
+        }
+
+        function getPortAbsolutePos(portId) {
+            const portEl = document.getElementById(portId);
+            if (!portEl) return { x: 0, y: 0 };
+            const canvasRect = document.getElementById('canvas-container').getBoundingClientRect();
+            const rect = portEl.getBoundingClientRect();
+            return {
+                x: rect.left + rect.width / 2 - canvasRect.left,
+                y: rect.top + rect.height / 2 - canvasRect.top
+            };
+        }
+
+        function startWiring(nodeId, portId, portType, e) {
+            const canvas = document.getElementById('canvas-container');
+            const tempWire = document.getElementById('temp-wire');
+            tempWire.classList.remove('hidden');
+
+            const fromPos = getPortAbsolutePos(portId);
+
+            const onMouseMove = (moveEv) => {
+                const canvasRect = canvas.getBoundingClientRect();
+                const toX = moveEv.clientX - canvasRect.left;
+                const toY = moveEv.clientY - canvasRect.top;
+
+                const pathData = calculateBezierPath(fromPos.x, fromPos.y, toX, toY);
+                tempWire.setAttribute('d', pathData);
+            };
+
+            const onMouseUp = (upEv) => {
+                tempWire.classList.add('hidden');
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+
+                const targetEl = document.elementFromPoint(upEv.clientX, upEv.clientY);
+                if (targetEl && targetEl.classList.contains('circuit-port')) {
+                    const targetPortId = targetEl.id;
+                    const targetNodeId = targetEl.dataset.node;
+                    const targetType = targetEl.dataset.type;
+
+                    if (portType !== targetType && nodeId !== targetNodeId) {
+                        const sourcePort = portType === 'out' ? portId : targetPortId;
+                        const destPort = portType === 'in' ? portId : targetPortId;
+                        const sourceNode = portType === 'out' ? nodeId : targetNodeId;
+                        const destNode = portType === 'in' ? nodeId : targetNodeId;
+
+                        addConnection(sourceNode, sourcePort, destNode, destPort);
+                    }
+                }
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
+
+        function addConnection(sourceNodeId, sourcePortId, destNodeId, destPortId) {
+            state.connections = state.connections.filter(c => c.destPortId !== destPortId);
+
+            state.connections.push({
+                id: 'wire_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                sourceNodeId,
+                sourcePortId,
+                destNodeId,
+                destPortId,
+                voltage: 0.0
+            });
+
+            evaluateCircuit();
+            renderWires();
+        }
+
+        function removeConnection(connId) {
+            state.connections = state.connections.filter(c => c.id !== connId);
+            evaluateCircuit();
+            renderWires();
+        }
+
+        function removeNode(nodeId) {
+            state.connections = state.connections.filter(c => c.sourceNodeId !== nodeId && c.destNodeId !== nodeId);
+            state.nodes = state.nodes.filter(n => n.id !== nodeId);
+            const el = document.getElementById(nodeId);
+            if (el) el.remove();
+
+            evaluateCircuit();
+            renderWires();
+        }
+
+        function calculateBezierPath(x1, y1, x2, y2) {
+            const dx = Math.abs(x2 - x1) * 0.55;
+            const cx1 = x1 + Math.max(dx, 40);
+            const cy1 = y1;
+            const cx2 = x2 - Math.max(dx, 40);
+            const cy2 = y2;
+            return `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`;
+        }
+
+        function renderWires() {
+            const wiresLayer = document.getElementById('wires-layer');
+            const tooltip = document.getElementById('wire-tooltip');
+            wiresLayer.innerHTML = '';
+
+            state.connections.forEach(conn => {
+                const p1 = getPortAbsolutePos(conn.sourcePortId);
+                const p2 = getPortAbsolutePos(conn.destPortId);
+                const pathD = calculateBezierPath(p1.x, p1.y, p2.x, p2.y);
+                const color = getVoltageColor(conn.voltage);
+
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('class', 'group cursor-pointer');
+
+                // Cable de interacción transparente más grueso para facilitar el clic
+                const hitWire = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                hitWire.setAttribute('d', pathD);
+                hitWire.setAttribute('fill', 'none');
+                hitWire.setAttribute('stroke', 'transparent');
+                hitWire.setAttribute('stroke-width', '20');
+
+                hitWire.onclick = () => {
+                    tooltip.classList.add('hidden');
+                    removeConnection(conn.id);
+                };
+
+                // Tooltip al inspeccionar el cable
+                hitWire.onmouseenter = (e) => {
+                    const sign = conn.voltage > 0 ? '+' : '';
+                    tooltip.innerHTML = `Línea de Señal: <span class="font-bold text-amber-300">${sign}${conn.voltage.toFixed(2)} V</span>`;
+                    tooltip.style.left = (e.clientX + 14) + 'px';
+                    tooltip.style.top = (e.clientY - 28) + 'px';
+                    tooltip.classList.remove('hidden');
+                };
+
+                hitWire.onmousemove = (e) => {
+                    tooltip.style.left = (e.clientX + 14) + 'px';
+                    tooltip.style.top = (e.clientY - 28) + 'px';
+                };
+
+                hitWire.onmouseleave = () => {
+                    tooltip.classList.add('hidden');
+                };
+
+                // Cable visible limpio con color estricto (+V Rojo, -V Negro)
+                const visibleWire = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                visibleWire.setAttribute('d', pathD);
+                visibleWire.setAttribute('fill', 'none');
+                visibleWire.setAttribute('stroke', color);
+                visibleWire.setAttribute('stroke-width', '3.5');
+                visibleWire.setAttribute('stroke-linecap', 'round');
+                visibleWire.setAttribute('filter', 'url(#glow)');
+                visibleWire.setAttribute('class', 'transition-colors duration-150 group-hover:stroke-amber-400');
+
+                // Flujo animado discreto
+                const flowWire = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                flowWire.setAttribute('d', pathD);
+                flowWire.setAttribute('fill', 'none');
+                flowWire.setAttribute('stroke', 'rgba(255,255,255,0.45)');
+                flowWire.setAttribute('stroke-width', '2');
+                flowWire.setAttribute('class', 'wire-flow pointer-events-none');
+
+                g.appendChild(hitWire);
+                g.appendChild(visibleWire);
+                g.appendChild(flowWire);
+                wiresLayer.appendChild(g);
+            });
+        }
+
+        function evaluateCircuit() {
+            // Inicializar fuentes
+            state.nodes.forEach(node => {
+                if (node.type === 'potentiometer') {
+                    node.voltage = parseFloat(node.params.val);
+                }
+            });
+
+            // Propagación en cascada de la red
+            for (let iter = 0; iter < 6; iter++) {
+                state.connections.forEach(conn => {
+                    const srcNode = state.nodes.find(n => n.id === conn.sourceNodeId);
+                    if (srcNode) {
+                        conn.voltage = srcNode.voltage || 0.0;
+                    }
+                });
+
+                state.nodes.forEach(node => {
+                    if (node.type === 'inverting_amp') {
+                        const inConn = state.connections.find(c => c.destPortId === `${node.id}_in`);
+                        const vin = inConn ? inConn.voltage : 0.0;
+                        const gain = -(node.params.rf / node.params.rin);
+                        let vout = gain * vin;
+
+                        if (vout > V_SAT) {
+                            vout = V_SAT;
+                            node.isSaturated = true;
+                        } else if (vout < -V_SAT) {
+                            vout = -V_SAT;
+                            node.isSaturated = true;
+                        } else {
+                            node.isSaturated = false;
+                        }
+                        node.voltage = vout;
+                        node.lastVin = vin;
+                        node.hasInput = !!inConn;
+
+                    } else if (node.type === 'summing_amp') {
+                        const c1 = state.connections.find(c => c.destPortId === `${node.id}_in1`);
+                        const c2 = state.connections.find(c => c.destPortId === `${node.id}_in2`);
+                        const c3 = state.connections.find(c => c.destPortId === `${node.id}_in3`);
+
+                        const v1 = c1 ? c1.voltage : 0.0;
+                        const v2 = c2 ? c2.voltage : 0.0;
+                        const v3 = c3 ? c3.voltage : 0.0;
+
+                        const rf = node.params.rf;
+                        const sum = (v1 / node.params.r1) + (v2 / node.params.r2) + (v3 / node.params.r3);
+                        let vout = -rf * sum;
+
+                        if (vout > V_SAT) {
+                            vout = V_SAT;
+                            node.isSaturated = true;
+                        } else if (vout < -V_SAT) {
+                            vout = -V_SAT;
+                            node.isSaturated = true;
+                        } else {
+                            node.isSaturated = false;
+                        }
+                        node.voltage = vout;
+                        node.lastInputs = [v1, v2, v3];
+                        node.hasInputs = [!!c1, !!c2, !!c3];
+
+                    } else if (node.type === 'voltmeter') {
+                        const inConn = state.connections.find(c => c.destPortId === `${node.id}_in`);
+                        node.voltage = inConn ? inConn.voltage : 0.0;
+                    }
+                });
+            }
+
+            updateUIDisplays();
+        }
+
+        function updatePortBadge(elemId, voltage, isConnected) {
+            const el = document.getElementById(elemId);
+            if (!el) return;
+            if (!isConnected) {
+                el.textContent = '0.0V';
+                el.className = 'font-mono text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 border border-slate-200';
+            } else {
+                const sign = voltage > 0 ? '+' : '';
+                el.textContent = `${sign}${voltage.toFixed(2)}V`;
+                if (voltage > 0.04) {
+                    el.className = 'font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-200 shadow-sm';
+                } else if (voltage < -0.04) {
+                    el.className = 'font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-900 text-white border border-slate-950 shadow-sm';
+                } else {
+                    el.className = 'font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300';
+                }
+            }
+        }
+
+        function updateUIDisplays() {
+            state.nodes.forEach(node => {
+                if (node.type === 'potentiometer') {
+                    const numInput = document.getElementById(`${node.id}_num`);
+                    const slider = document.getElementById(`${node.id}_slider`);
+                    if (numInput && document.activeElement !== numInput) {
+                        numInput.value = node.params.val.toFixed(2);
+                        numInput.className = `w-20 text-center font-mono font-bold text-sm px-1.5 py-0.5 rounded-lg border ${getVoltageBgClass(node.voltage)} focus:outline-none focus:ring-2 focus:ring-amber-400`;
+                    }
+                    if (slider && document.activeElement !== slider) {
+                        slider.value = node.params.val;
+                    }
+                } else if (node.type === 'inverting_amp') {
+                    const satBadge = document.getElementById(`${node.id}_sat_badge`);
+                    if (satBadge) {
+                        if (node.isSaturated) satBadge.classList.remove('hidden');
+                        else satBadge.classList.add('hidden');
+                    }
+
+                    // Actualizar etiqueta en puerto de entrada
+                    updatePortBadge(`${node.id}_in_val`, node.lastVin, node.hasInput);
+
+                    // Ecuación analítica teórica KaTeX
+                    renderKaTeX(`${node.id}_theory_math`, `V_o = -\\frac{R_f}{R_{in}} \\cdot V_{in}`);
+
+                    // Ecuación evaluada con números reales en tiempo real
+                    const vin = node.lastVin !== undefined ? node.lastVin : 0.0;
+                    const vinStr = vin >= 0 ? `+${vin.toFixed(1)}` : `${vin.toFixed(1)}`;
+                    const voutStr = node.voltage >= 0 ? `+${node.voltage.toFixed(2)}` : `${node.voltage.toFixed(2)}`;
+                    renderKaTeX(`${node.id}_eval_math`, `V_o = -\\frac{${node.params.rf}}{${node.params.rin}} (${vinStr}\\text{V}) = \\mathbf{${voutStr}\\text{V}}`);
+
+                } else if (node.type === 'summing_amp') {
+                    const satBadge = document.getElementById(`${node.id}_sat_badge`);
+                    if (satBadge) {
+                        if (node.isSaturated) satBadge.classList.remove('hidden');
+                        else satBadge.classList.add('hidden');
+                    }
+
+                    // Actualizar etiquetas en los 3 puertos de entrada
+                    const hasIn = node.hasInputs || [false, false, false];
+                    const [v1, v2, v3] = node.lastInputs || [0, 0, 0];
+                    updatePortBadge(`${node.id}_in1_val`, v1, hasIn[0]);
+                    updatePortBadge(`${node.id}_in2_val`, v2, hasIn[1]);
+                    updatePortBadge(`${node.id}_in3_val`, v3, hasIn[2]);
+
+                    // Ecuación analítica teórica KaTeX
+                    renderKaTeX(`${node.id}_theory_math`, `V_o = -R_f \\left( \\frac{V_1}{R_1} + \\frac{V_2}{R_2} + \\frac{V_3}{R_3} \\right)`);
+
+                    // Ecuación evaluada con números reales en tiempo real
+                    const v1Str = v1 >= 0 ? `+${v1.toFixed(1)}` : `${v1.toFixed(1)}`;
+                    const v2Str = v2 >= 0 ? `+${v2.toFixed(1)}` : `${v2.toFixed(1)}`;
+                    const v3Str = v3 >= 0 ? `+${v3.toFixed(1)}` : `${v3.toFixed(1)}`;
+                    const voutStr = node.voltage >= 0 ? `+${node.voltage.toFixed(2)}` : `${node.voltage.toFixed(2)}`;
+                    renderKaTeX(`${node.id}_eval_math`, `V_o = -${node.params.rf} \\left( \\frac{${v1Str}}{${node.params.r1}} + \\frac{${v2Str}}{${node.params.r2}} + \\frac{${v3Str}}{${node.params.r3}} \\right) = \\mathbf{${voutStr}\\text{V}}`);
+
+                } else if (node.type === 'voltmeter') {
+                    const reading = document.getElementById(`${node.id}_reading`);
+                    if (reading) {
+                        reading.style.color = getVoltageColor(node.voltage);
+                        reading.textContent = `${node.voltage > 0 ? '+' : ''}${node.voltage.toFixed(2)} V`;
+                    }
+                }
+            });
+        }
+
+        window.updatePotentiometer = function(nodeId, val) {
+            const node = state.nodes.find(n => n.id === nodeId);
+            if (node) {
+                let clamped = Math.min(12, Math.max(-12, parseFloat(val) || 0));
+                node.params.val = clamped;
+                const numInput = document.getElementById(`${nodeId}_num`);
+                if (numInput) {
+                    numInput.value = clamped.toFixed(2);
+                    numInput.className = `w-20 text-center font-mono font-bold text-sm px-1.5 py-0.5 rounded-lg border ${getVoltageBgClass(clamped)} focus:outline-none focus:ring-2 focus:ring-amber-400`;
+                }
+                evaluateCircuit();
+                renderWires();
+            }
+        };
+
+        window.onPotNumberChange = function(nodeId, val) {
+            const node = state.nodes.find(n => n.id === nodeId);
+            if (node) {
+                let clamped = Math.min(12, Math.max(-12, parseFloat(val) || 0));
+                node.params.val = clamped;
+                const slider = document.getElementById(`${nodeId}_slider`);
+                if (slider) slider.value = clamped;
+                evaluateCircuit();
+                renderWires();
+            }
+        };
+
+        window.stepPot = function(nodeId, delta) {
+            const node = state.nodes.find(n => n.id === nodeId);
+            if (node) {
+                let current = parseFloat(node.params.val) || 0;
+                let next = Math.min(12, Math.max(-12, +(current + delta).toFixed(2)));
+                node.params.val = next;
+                const numInput = document.getElementById(`${nodeId}_num`);
+                if (numInput) numInput.value = next.toFixed(2);
+                const slider = document.getElementById(`${nodeId}_slider`);
+                if (slider) slider.value = next;
+                evaluateCircuit();
+                renderWires();
+            }
+        };
+
+        window.updateAmpParam = function(nodeId, param, val) {
+            const node = state.nodes.find(n => n.id === nodeId);
+            if (node) {
+                node.params[param] = Math.max(0.1, parseFloat(val) || 1);
+                evaluateCircuit();
+                renderWires();
+            }
+        };
+
+        window.updateSumParam = function(nodeId, param, val) {
+            const node = state.nodes.find(n => n.id === nodeId);
+            if (node) {
+                node.params[param] = Math.max(0.1, parseFloat(val) || 1);
+                evaluateCircuit();
+                renderWires();
+            }
+        };
+
+        window.showModal = function(title, message, isSuccess = true) {
+            const container = document.getElementById('modal-container');
+            const box = document.getElementById('modal-box');
+            const titleEl = document.getElementById('modal-title');
+            const msgEl = document.getElementById('modal-message');
+            const iconContainer = document.getElementById('modal-icon-container');
+
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+
+            if (isSuccess) {
+                iconContainer.className = 'w-14 h-14 mx-auto rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4';
+                iconContainer.innerHTML = '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+            } else {
+                iconContainer.className = 'w-14 h-14 mx-auto rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mb-4';
+                iconContainer.innerHTML = '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>';
+            }
+
+            container.classList.remove('hidden');
+            setTimeout(() => {
+                container.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+            }, 10);
+        };
+
+        window.closeModal = function() {
+            const container = document.getElementById('modal-container');
+            const box = document.getElementById('modal-box');
+            container.classList.add('opacity-0');
+            box.classList.add('scale-95');
+            setTimeout(() => container.classList.add('hidden'), 200);
+        };
+
+        window.loadSimpleAveragePreset = function(silent = false) {
+            clearCanvas();
+
+            // 1. Crear 3 potenciómetros en columna izquierda
+            const p1 = createNode('potentiometer', 40, 40, { val: 4.0 });
+            const p2 = createNode('potentiometer', 40, 220, { val: 8.0 });
+            const p3 = createNode('potentiometer', 40, 400, { val: -3.0 });
+
+            // 2. Sumador Inversor espaciado
+            const summer = createNode('summing_amp', 480, 100, { r1: 10, r2: 10, r3: 10, rf: 10 });
+
+            // 3. Amp Inversor con ganancia 1/3 (Rin = 30k, Rf = 10k)
+            const inverter = createNode('inverting_amp', 940, 140, { rin: 30, rf: 10 });
+
+            // 4. Voltímetro de salida en extremo derecho
+            const meter = createNode('voltmeter', 1380, 170);
+
+            // Conectar Potenciómetros -> Sumador
+            addConnection(p1.id, `${p1.id}_out`, summer.id, `${summer.id}_in1`);
+            addConnection(p2.id, `${p2.id}_out`, summer.id, `${summer.id}_in2`);
+            addConnection(p3.id, `${p3.id}_out`, summer.id, `${summer.id}_in3`);
+
+            // Conectar Sumador -> Amp Inversor
+            addConnection(summer.id, `${summer.id}_out`, inverter.id, `${inverter.id}_in`);
+
+            // Conectar Amp Inversor -> Voltímetro
+            addConnection(inverter.id, `${inverter.id}_out`, meter.id, `${meter.id}_in`);
+
+            if (!silent) {
+                showModal("Circuito Promediador Cargado", "Se ha construido el promediador simple de clase:\n1. Sumador inversor de 3 entradas unitarias.\n2. Inversor con ganancia 1/3 (Rin = 30 kΩ, Rf = 10 kΩ).\n3. Inversión de fase cancelada (+).", true);
+            }
+        };
+
+        window.autoTidyLayout = function() {
+            const pots = state.nodes.filter(n => n.type === 'potentiometer');
+            const summers = state.nodes.filter(n => n.type === 'summing_amp');
+            const amps = state.nodes.filter(n => n.type === 'inverting_amp');
+            const meters = state.nodes.filter(n => n.type === 'voltmeter');
+
+            pots.forEach((p, idx) => {
+                p.x = 40;
+                p.y = 40 + idx * 180;
+            });
+
+            summers.forEach((s, idx) => {
+                s.x = 480;
+                s.y = 100 + idx * 270;
+            });
+
+            amps.forEach((a, idx) => {
+                a.x = 940;
+                a.y = 140 + idx * 250;
+            });
+
+            meters.forEach((m, idx) => {
+                m.x = 1380;
+                m.y = 170 + idx * 200;
+            });
+
+            state.nodes.forEach(node => {
+                const el = document.getElementById(node.id);
+                if (el) el.style.transform = `translate(${node.x}px, ${node.y}px)`;
+            });
+
+            renderWires();
+        };
+
+        function clearCanvas() {
+            state.nodes = [];
+            state.connections = [];
+            state.nextNodeId = 1;
+            document.getElementById('nodes-container').innerHTML = '';
+            document.getElementById('wires-layer').innerHTML = '';
+        }
+
+        function validateCurrentChallenge() {
+            const pots = state.nodes.filter(n => n.type === 'potentiometer');
+            const meters = state.nodes.filter(n => n.type === 'voltmeter');
+            const summers = state.nodes.filter(n => n.type === 'summing_amp');
+            const inverters = state.nodes.filter(n => n.type === 'inverting_amp');
+
+            if (pots.length < 3) {
+                showModal("Faltan Entradas", "El reto requiere al menos 3 potenciómetros conectados en el circuito.", false);
+                return;
+            }
+
+            if (meters.length === 0) {
+                showModal("Falta Instrumento", "Agrega un Voltímetro y conéctalo a la salida final para medir la respuesta del sistema.", false);
+                return;
+            }
+
+            const activeMeter = meters[0];
+            const currentChallenge = state.challenges[state.currentChallengeIdx];
+            const potVals = pots.map(p => p.voltage);
+
+            const result = currentChallenge.check(potVals, activeMeter.voltage, state.nodes);
+
+            const errorPercent = result.expected !== 0
+                ? (Math.abs((result.actual - result.expected) / result.expected) * 100).toFixed(2)
+                : Math.abs(result.actual).toFixed(2);
+
+            document.getElementById('challenge-error-val').textContent = `${errorPercent}%`;
+
+            if (result.ok) {
+                showModal(
+                    "¡Excelente Trabajo!",
+                    `Modelo analógico validado con éxito.\n• Voltaje esperado: ${result.expected.toFixed(2)} V\n• Voltaje medido: ${result.actual.toFixed(2)} V\n• Error: ${errorPercent}%`,
+                    true
+                );
+            } else {
+                // Diagnóstico inteligente pedagógico
+                let diagnosisMsg = `El valor medido (${result.actual.toFixed(2)} V) discrepa del valor esperado (${result.expected.toFixed(2)} V).\n\n`;
+
+                if (summers.length > 0) {
+                    const sm = summers[0];
+                    // Caso común: el usuario puso resistencias proporcionales a los pesos en lugar de inversamente proporcionales
+                    if (sm.params.r1 > sm.params.r3 && (state.currentChallengeIdx === 1 || state.currentChallengeIdx === 2)) {
+                        diagnosisMsg += `⚠️ DETECCIÓN DE ERROR TÍPICO:\n` +
+                            `Colocaste R1=${sm.params.r1}k y R3=${sm.params.r3}k pensando en los porcentajes. Pero recuerda que la ganancia es (Rf / Ri). Como la resistencia está en el DENOMINADOR, una resistencia menor produce una ganancia MAYOR.\n\n`;
+                    }
+                }
+
+                if (inverters.length > 0) {
+                    const inv = inverters[0];
+                    const invGain = inv.params.rf / inv.params.rin;
+                    if (Math.abs(invGain - 1.0) > 0.05 && (state.currentChallengeIdx === 1 || state.currentChallengeIdx === 2)) {
+                        diagnosisMsg += `⚠️ REVISA LA SEGUNDA ETAPA:\n` +
+                            `Tu inversor tiene ganancia ${invGain.toFixed(2)} (Rin=${inv.params.rin}k, Rf=${inv.params.rf}k). En este promedio ponderado, la segunda etapa solo debe invertir el signo (ganancia 1.0: Rin = Rf = 10k), de lo contrario modifica los pesos calculados.\n\n`;
+                    }
+                }
+
+                if (result.extra) {
+                    diagnosisMsg += `Nota: ${result.extra}\n\n`;
+                }
+
+                diagnosisMsg += `💡 Haz clic en "Pista Teórica" en la barra superior para ver la deducción analítica paso a paso.`;
+
+                showModal(
+                    "Aún no coincide el modelo",
+                    diagnosisMsg,
+                    false
+                );
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('btn-load-preset').onclick = () => loadSimpleAveragePreset(false);
+            document.getElementById('btn-tidy-canvas').onclick = autoTidyLayout;
+            document.getElementById('btn-clear-canvas').onclick = clearCanvas;
+            document.getElementById('btn-eval-challenge').onclick = validateCurrentChallenge;
+
+            const btnHint = document.getElementById('btn-challenge-hint');
+            if (btnHint) {
+                btnHint.onclick = () => {
+                    const ch = state.challenges[state.currentChallengeIdx];
+                    showModal(`Pista Teórica - ${ch.title}`, ch.hint, true);
+                };
+            }
+
+            const btnSandbox = document.getElementById('btn-mode-sandbox');
+            const btnChallenges = document.getElementById('btn-mode-challenges');
+            const challengePanel = document.getElementById('challenge-panel');
+            const challengeSelect = document.getElementById('challenge-select');
+            const targetText = document.getElementById('challenge-target-text');
+
+            btnSandbox.onclick = () => {
+                state.isChallengeMode = false;
+                challengePanel.classList.add('hidden');
+                btnSandbox.className = 'px-4 py-1.5 text-xs font-semibold rounded-lg bg-white text-slate-800 shadow-sm border border-slate-200/60';
+                btnChallenges.className = 'px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900';
+            };
+
+            btnChallenges.onclick = () => {
+                state.isChallengeMode = true;
+                challengePanel.classList.remove('hidden');
+                btnChallenges.className = 'px-4 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white shadow-sm';
+                btnSandbox.className = 'px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900';
+            };
+
+            challengeSelect.onchange = (e) => {
+                state.currentChallengeIdx = parseInt(e.target.value);
+                const ch = state.challenges[state.currentChallengeIdx];
+                renderKaTeX('challenge-target-text', ch.formula);
+            };
+
+            window.addEventListener('resize', renderWires);
+
+            // Cargar circuito inicial silenciosamente
+            loadSimpleAveragePreset(true);
+
+            // Re-evaluar cuando KaTeX termine de cargar desde CDN
+            window.addEventListener('load', () => {
+                setTimeout(updateUIDisplays, 60);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Protocolo Éxodo: El Consejo del Domo 7</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+            tech: ['"Chakra Petch"', 'sans-serif'],
+          },
+          colors: {
+            domo: {
+              cyan: '#06b6d4',
+              amber: '#f59e0b',
+              crimson: '#ef4444',
+              emerald: '#10b981',
+              dark: '#030712',
+              panel: '#0f172a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Scanlines and CRT ambiance */
+    .crt-overlay::before {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      z-index: 40;
+      background-size: 100% 3px, 6px 100%;
+      pointer-events: none;
+      opacity: 0.7;
+    }
+    .crt-glow {
+      text-shadow: 0 0 10px rgba(6, 182, 212, 0.5), 0 0 20px rgba(6, 182, 212, 0.2);
+    }
+    .glow-crimson {
+      text-shadow: 0 0 10px rgba(239, 68, 68, 0.7);
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #0b0f19;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #06b6d4;
+    }
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .animate-pulse-slow {
+      animation: pulse-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+
+<body class="h-full bg-slate-950 text-slate-100 flex flex-col font-sans select-none overflow-x-hidden crt-overlay">
+
+  <!-- Top Global Header / HUD -->
+  <header class="bg-slate-900/90 border-b border-slate-800 backdrop-blur px-4 py-3 flex flex-wrap items-center justify-between gap-4 z-30 sticky top-0">
+    <div class="flex items-center space-x-3">
+      <div class="w-3 h-3 rounded-full bg-cyan-500 animate-ping"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-tech tracking-wider text-cyan-400 font-bold text-lg">NEXUS // DOMO 7</span>
+          <span class="text-xs bg-slate-800 text-cyan-300 font-mono px-2 py-0.5 rounded border border-cyan-900/50">v4.8 ÉTICA-CRISIS</span>
+        </div>
+        <p class="text-xs text-slate-400 font-mono hidden sm:block">Año 2095 • Subsistema de Gobernanza y Conciencia Moral</p>
+      </div>
+    </div>
+
+    <!-- Quick Audio & Display Controls -->
+    <div class="flex items-center gap-2">
+      <button id="btn-sound" onclick="SoundEngine.toggle()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded-lg bg-slate-800 border border-slate-700 hover:border-cyan-500 text-slate-300 transition">
+        <span id="sound-icon">🔊</span> <span id="sound-label">Audio: ON</span>
+      </button>
+
+      <button id="btn-timer-toggle" onclick="TimerEngine.togglePause()" class="hidden flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded-lg bg-slate-800 border border-slate-700 hover:border-amber-500 text-amber-400 transition">
+        <span>⏱️</span> <span id="timer-display">60s</span>
+      </button>
+
+      <button onclick="Game.openSettingsModal()" class="px-2.5 py-1.5 text-xs font-mono rounded-lg bg-slate-800 border border-slate-700 hover:border-cyan-500 text-slate-300 transition" title="Configurar Modo Aula & API Gemini">
+        ⚙️ Config
+      </button>
+    </div>
+  </header>
+
+  <!-- Societal Meters Bar -->
+  <section id="metrics-bar" class="bg-slate-900/60 border-b border-slate-800/80 px-4 py-3 z-20 transition-all duration-500">
+    <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
+      
+      <!-- Metric 1: Estabilidad Social -->
+      <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/90 relative overflow-hidden shadow-inner">
+        <div class="flex justify-between items-center mb-1.5">
+          <div class="flex items-center gap-2">
+            <span class="text-amber-400 text-base">🛡️</span>
+            <span class="text-xs font-tech font-bold tracking-wider text-slate-200">ESTABILIDAD & ORDEN SOCIAL</span>
+          </div>
+          <span id="label-stability" class="text-xs font-mono font-bold text-amber-400">50%</span>
+        </div>
+        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5">
+          <div id="bar-stability" class="bg-gradient-to-r from-amber-500 to-yellow-400 h-full rounded-full transition-all duration-700 ease-out" style="width: 50%;"></div>
+        </div>
+        <p id="sub-stability" class="text-[11px] text-slate-400 mt-1 font-mono">Estado: Alerta civil controlada.</p>
+      </div>
+
+      <!-- Metric 2: Dignidad y Derechos Humanos -->
+      <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/90 relative overflow-hidden shadow-inner">
+        <div class="flex justify-between items-center mb-1.5">
+          <div class="flex items-center gap-2">
+            <span class="text-cyan-400 text-base">⚖️</span>
+            <span class="text-xs font-tech font-bold tracking-wider text-slate-200">DIGNIDAD & DERECHOS HUMANOS</span>
+          </div>
+          <span id="label-dignity" class="text-xs font-mono font-bold text-cyan-400">50%</span>
+        </div>
+        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5">
+          <div id="bar-dignity" class="bg-gradient-to-r from-cyan-500 to-blue-400 h-full rounded-full transition-all duration-700 ease-out" style="width: 50%;"></div>
+        </div>
+        <p id="sub-dignity" class="text-[11px] text-slate-400 mt-1 font-mono">Estado: Principios fundamentales en vigencia.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Main Stage Viewport -->
+  <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center relative z-20">
+    <div id="stage-container" class="bg-slate-900/80 border border-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8 relative backdrop-blur min-h-[480px] flex flex-col justify-between">
+      <!-- Dynamic Content Rendered Here By JavaScript -->
+    </div>
+  </main>
+
+  <!-- In-Game Notice / Alert Banner Modal (Replacing native alert) -->
+  <div id="modal-container" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative animate-fadeIn">
+      <div class="flex items-center gap-3 mb-4">
+        <div id="modal-icon" class="text-2xl">⚠️</div>
+        <h3 id="modal-title" class="text-lg font-tech font-bold text-cyan-400 tracking-wide">AVISO DEL SISTEMA</h3>
+      </div>
+      <p id="modal-body" class="text-slate-300 text-sm leading-relaxed mb-6 font-sans">Mensaje del sistema.</p>
+      <div class="flex justify-end gap-3">
+        <button onclick="Game.closeModal()" class="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-sm transition font-tech tracking-wider">
+          ENTENDIDO
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings & Classroom Configuration Modal -->
+  <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-6 shadow-2xl text-left">
+      <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-tech font-bold text-slate-100 flex items-center gap-2">
+          <span>⚙️</span> CONFIGURACIÓN DE LA CLASE
+        </h3>
+        <button onclick="Game.closeSettingsModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <div class="space-y-4 text-sm font-sans">
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-1">DURACIÓN DEL TEMPORIZADOR DE DEBATE:</label>
+          <select id="select-timer-duration" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-slate-200 focus:border-cyan-500 font-mono">
+            <option value="0">Desactivado (Discusión libre sin prisa)</option>
+            <option value="45">45 Segundos (Votación Relámpago)</option>
+            <option value="60" selected>60 Segundos (Recomendado)</option>
+            <option value="90">90 Segundos (Debate Moderado)</option>
+            <option value="120">120 Segundos (Discusión Profunda)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-1">
+            GEMINI API KEY (OPCIONAL):
+            <span class="text-cyan-400 text-[10px] ml-1">Para evaluación en vivo de argumentos</span>
+          </label>
+          <input type="password" id="input-api-key" placeholder="Dejar vacío para usar el motor de evaluación pedagógico offline" 
+            class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-slate-200 focus:border-cyan-500 font-mono text-xs">
+          <p class="text-[11px] text-slate-500 mt-1">
+            Si se ingresa una clave, la IA evaluará directamente si el argumento oral/escrito fue un juicio moral tradicional o un juicio ético fundamentado. Si no tienes clave, el juego utiliza su robusto árbol narrativo interno con explicaciones completas.
+          </p>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800 flex justify-end gap-2">
+          <button onclick="Game.closeSettingsModal()" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 font-mono text-xs">
+            Cerrar
+          </button>
+          <button onclick="Game.saveSettings()" class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs">
+            Guardar Cambios
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       AUDIO SYNTHESIS ENGINE (Web Audio API - No external files needed)
+       ========================================================================= */
+    const SoundEngine = {
+      enabled: true,
+      ctx: null,
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      },
+
+      toggle() {
+        this.enabled = !this.enabled;
+        const icon = document.getElementById('sound-icon');
+        const label = document.getElementById('sound-label');
+        if (this.enabled) {
+          icon.innerText = '🔊';
+          label.innerText = 'Audio: ON';
+          this.playClick();
+        } else {
+          icon.innerText = '🔇';
+          label.innerText = 'Audio: OFF';
+        }
+      },
+
+      playClick() {
+        if (!this.enabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, this.ctx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.04);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.04);
+      },
+
+      playAlarm() {
+        if (!this.enabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+        osc.frequency.setValueAtTime(440, this.ctx.currentTime + 0.12);
+        osc.frequency.setValueAtTime(220, this.ctx.currentTime + 0.24);
+        gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.35);
+      },
+
+      playImpact(type = 'success') {
+        if (!this.enabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        if (type === 'success') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.2);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+        } else {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(280, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(110, this.ctx.currentTime + 0.3);
+          gain.gain.setValueAtTime(0.22, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+        }
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.35);
+      }
+    };
+
+    /* =========================================================================
+       TIMER ENGINE (For dynamic classroom debates)
+       ========================================================================= */
+    const TimerEngine = {
+      duration: 60,
+      remaining: 60,
+      interval: null,
+      isPaused: false,
+
+      start(seconds = null) {
+        this.stop();
+        if (seconds !== null) this.duration = seconds;
+        if (this.duration <= 0) {
+          document.getElementById('btn-timer-toggle').classList.add('hidden');
+          return;
+        }
+
+        this.remaining = this.duration;
+        this.isPaused = false;
+        document.getElementById('btn-timer-toggle').classList.remove('hidden');
+        this.updateDisplay();
+
+        this.interval = setInterval(() => {
+          if (!this.isPaused) {
+            this.remaining--;
+            this.updateDisplay();
+            if (this.remaining <= 10 && this.remaining > 0) {
+              SoundEngine.playClick();
+            }
+            if (this.remaining <= 0) {
+              this.stop();
+              SoundEngine.playAlarm();
+              Game.handleTimeExpired();
+            }
+          }
+        }, 1000);
+      },
+
+      stop() {
+        if (this.interval) clearInterval(this.interval);
+        this.interval = null;
+      },
+
+      togglePause() {
+        this.isPaused = !this.isPaused;
+        const btn = document.getElementById('btn-timer-toggle');
+        if (this.isPaused) {
+          btn.classList.add('opacity-50');
+        } else {
+          btn.classList.remove('opacity-50');
+        }
+        SoundEngine.playClick();
+      },
+
+      updateDisplay() {
+        const el = document.getElementById('timer-display');
+        if (el) el.innerText = `${this.remaining}s`;
+      }
+    };
+
+    /* =========================================================================
+       GAME STATE & DILEMMAS (Ultra-polemical classroom edition)
+       ========================================================================= */
+    const CRISIS_DATA = [
+      {
+        id: 1,
+        unitCode: "1.1.1",
+        unitTitle: "La ética, su objeto de estudio y su sentido sociocultural",
+        title: "CRISIS 1: LA VOLUNTAD DE MORIR DE LA DRA. ARIS",
+        banner: "AUTONOMÍA CULTURAL VS. ESCLAVITUD UTILITARISTA DEL SABER",
+        description: `
+          El Domo 7 mantiene una regla sagrada de 40 años: a los 75 años todo ciudadano dona su cuerpo y pasa al "Retiro Digno" para no consumir aire. Hoy cumple 75 años la <strong>Dra. Elena Aris</strong>, la única ingeniera viva capaz de reprogramar las bombas hídricas averiadas.
+          <br><br>
+          <strong class="text-amber-400">El conflicto intolerable:</strong> La Dra. Aris es una devota creyente de la religión comunitaria del Domo y <em>exige con fervor</em> que se le aplique la eutanasia ritual junto a sus compañeros de generación. Ha declarado: <em>"Mi alma pertenece al pacto sagrado; no permitiré que profanen mi muerte obligándome a trabajar"</em>.
+        `,
+        question: "¿Debe el Consejo obligarla por la fuerza a trabajar violando su dignidad religiosa, o respetar su voluntad aunque el Domo sufra escasez de agua mortal?",
+        options: [
+          {
+            letter: "A",
+            name: "Respetar su convicción y ejecutar el Retiro (Sentido Sociocultural y Autonomía)",
+            philosophy: "Respeto a la identidad moral y autonomía del individuo",
+            quote: "Si forzamos a una anciana a trabajar contra su fe, convertimos el Domo en un campo de concentración utilitarista. La moral comunitaria no se negocia.",
+            impact: { stability: +15, dignity: -25 },
+            consequence: `
+              <strong>Consecuencia aplicada:</strong> La Dra. Elena fue conducida al descanso sagrado en medio de cánticos populares. Su funeral unió a la comunidad en devoción. No obstante, 14 días después, el sistema de purificación hídrica colapsó. El agua ahora se raciona a 250 ml por habitante; 80 personas han sido hospitalizadas por deshidratación e intoxicación.
+            `,
+            reflection: "Se respetó la tradición cultural y el deseo del individuo, pero a costa de un desastre técnico que amenaza la vida física de miles de inocentes."
+          },
+          {
+            letter: "B",
+            name: "Forzarla a vivir y trabajar bajo custodia (Ética Utilitarista Coercitiva)",
+            philosophy: "Utilitarismo de supervivencia colectiva / Primacía del bien común",
+            quote: "El conocimiento de la Dra. Aris es patrimonio público de 5,000 almas. Su libertad individual o religiosa termina donde empieza la supervivencia de todos.",
+            impact: { stability: -25, dignity: +10 },
+            consequence: `
+              <strong>Consecuencia aplicada:</strong> Guardias armados confinaron a la Dra. Aris en el laboratorio central. Entre lágrimas y maldiciones contra el Consejo, reparó los filtros salvando el agua de la colonia. Sin embargo, estallaron insurrecciones en los distritos devotos: consideran al Consejo como profanadores tiranos que esclavizan a los ancianos.
+            `,
+            reflection: "¿Es legítimo vulnerar la libertad de culto y la voluntad de una persona si de su explotación forzada depende la vida del resto?"
+          }
+        ]
+      },
+      {
+        id: 2,
+        unitCode: "1.1.2",
+        unitTitle: "El juicio moral y el juicio ético",
+        title: "CRISIS 2: EL TRIAGE IMPLACABLE: NIÑOS VS. INGENIEROS",
+        banner: "REACCIÓN EMOCIONAL VISCERAL VS. CÁLCULO ÉTICO SISTÉMICO",
+        description: `
+          Una bacteria respiratoria letal ha infectado dos salas selladas. Solo quedan <strong>40 dosis exactas</strong> del antibiótico sintético 'Z-99' y no se podrá sintetizar más en un año.
+          <br><br>
+          En la Sala A hay <strong>40 niños obreros</strong> del sector hidropónico (8 a 12 años). En la Sala B hay <strong>30 ingenieros termonucleares adultos</strong> que operan las turbinas de energía. Si los ingenieros mueren, las turbinas fallarán en 90 días provocando el apagón del Domo (muerte de los 5,000 habitantes). Los padres de los niños están armados frente a las puertas implorando salvar a sus hijos.
+        `,
+        question: "¿A quién suministra el Consejo las últimas 40 dosis disponibles?",
+        options: [
+          {
+            letter: "A",
+            name: "Salvar a los 40 Niños (Juicio Moral Emotivo / Máxima Deontológica)",
+            philosophy: "Moral de la compasión visceral / Deber de custodia a la infancia",
+            quote: "¡Ninguna sociedad con conciencia moral puede sacrificar niños para salvar adultos funcionales! Quien abandona a sus hijos pierde su alma humana.",
+            impact: { stability: -35, dignity: +25 },
+            consequence: `
+              <strong>Consecuencia aplicada:</strong> Las 40 dosis se aplicaron a los infantes. El llanto de alivio recorrió el Domo y el Consejo fue aclamado como compasivo. Sin embargo, en 70 días los 30 ingenieros fallecieron. Sin relevo capacitado, el reactor nuclear 2 comenzó a fundirse y se decretó un racionamiento eléctrico severo. El colapso total es inminente.
+            `,
+            reflection: "El juicio moral reactivo sintió el imperativo de proteger a los infantes, pero cegó al Consejo ante las consecuencias macroscópicas mortales."
+          },
+          {
+            letter: "B",
+            name: "Salvar a los 30 Ingenieros (Juicio Ético Consecuencialista Crítico)",
+            philosophy: "Ética de la responsabilidad sistémica / Maximización de vidas futuras",
+            quote: "El dolor de perder a los niños es desgarrador, pero si salvamos a los niños hoy, ellos mismos y todo el Domo morirán asfixiados en 90 días.",
+            impact: { stability: +20, dignity: -40 },
+            consequence: `
+              <strong>Consecuencia aplicada:</strong> Los ingenieros se recuperaron y el reactor nuclear sigue estable. Sin embargo, los 40 niños perecieron ahogados en sus camas mientras sus padres eran contenidos por la policía antimotines. El trauma social es devastador: el pueblo ahora ve al Consejo como una oligarquía de carniceros tecnócratas.
+            `,
+            reflection: "El juicio ético racional preservó la viabilidad técnica del refugio, pero causó una herida atroz a la dignidad y al sentido moral de la comunidad."
+          }
+        ]
+      },
+      {
+        id: 3,
+        unitCode: "1.1.3",
+        unitTitle: "Valores éticos fundamentales: Verdad, Responsabilidad, Justicia y Libertad",
+        title: "CRISIS 3: LA 'MENTIRA NOBLE' DEL SECTOR C",
+        banner: "¿VERDAD Y LIBERTAD TOTAL O RESPONSABILIDAD Y SACRIFICIO ENCUBIERTO?",
+        description: `
+          Los radares detectaron una microfisura que despresurizará el Domo. Los cálculos son irrevocables: <strong>no hay aire suficiente para que 5,000 personas vivan</strong> hasta el rescate del convoy en 6 meses.
+          <br><br>
+          La única solución técnica para salvar a 4,000 almas es clausurar permanentemente los ductos de oxígeno del <strong>Sector C (1,000 habitantes de la zona fabril)</strong>. El director militar propone la <em>'Mentira Noble'</em>: sellar las compuertas simulando una 'cuarentena preventiva por fuga de gas' para que mueran dormidos sin dolor ni histeria. Si se publica la verdad, estallará una guerra civil masiva por los trajes presurizados y todos morirán en menos de 10 días.
+        `,
+        question: "¿Revela el Consejo la verdad o asume la responsabilidad del sacrificio secreto?",
+        options: [
+          {
+            letter: "A",
+            name: "Publicar la Verdad Absoluta (Priorizar la Verdad y la Libertad Procesal)",
+            philosophy: "Principio de no-engaño / Autonomía plena de los ciudadanos",
+            quote: "Nadie tiene derecho a decidir en secreto quién vive y quién muere. Decir la verdad es el deber ético supremo, sin importar el caos.",
+            impact: { stability: -45, dignity: +20 },
+            consequence: `
+              <strong>Consecuencia aplicada:</strong> La verdad se transmitió en todas las pantallas. El pánico fue incontrolable: en 3 horas, grupos armados del Sector C intentaron tomar por asalto los almacenes de trajes presurizados. Se desató una masacre civil en los pasillos centrales y las esclusas quedaron dañadas. El oxígeno se pierde al doble de velocidad.
+            `,
+            reflection: "La verdad pura ejercida sin asumir la Ética de la Responsabilidad política (Weber) derivó en autodestrucción salvaje."
+          },
+          {
+            letter: "B",
+            name: "Ejecutar la 'Mentira Noble' en secreto (Priorizar la Responsabilidad Consecuencial)",
+            philosophy: "Ética de la catástrofe / Sacrificio selectivo para preservar la especie",
+            quote: "El líder maduro debe ensuciarse las manos: mentir y cargar con la culpa del crimen para que 4,000 personas continúen con vida.",
+            impact: { stability: +25, dignity: -45 },
+            consequence: `
+              <strong>Consecuencia aplicada:</strong> Las compuertas del Sector C se cerraron bajo pretexto de desinfección. En 24 horas, los 1,000 habitantes quedaron asfixiados en silencio. Las 4,000 personas restantes respiran normalmente y llegarán al rescate. Los miembros del Consejo tienen en su conciencia el asesinato a sangre fría de su propia gente.
+            `,
+            reflection: "Se salvó la mayor cantidad de vidas posibles, pero se destruyó el valor supremo de la justicia y la verdad. ¿Se puede gobernar éticamente siendo un verdugo encubierto?"
+          }
+        ]
+      },
+      {
+        id: 4,
+        unitCode: "1.1.4",
+        unitTitle: "Derechos Humanos",
+        title: "CRISIS 4: EL DILEMA DEL MONSTRUO: ¿DERECHOS HUMANOS PARA EL INHUMANO?",
+        banner: "¿SON LOS DERECHOS HUMANOS REALMENTE INALIENABLES?",
+        description: `
+          Marcus Vance, cabecilla de una banda de contrabando, dinamitó deliberadamente la sala de terapia intensiva para saquear morfina militar, causando la muerte de 12 niños y 6 enfermeras. Vance ha sido capturado y declara desafiante: <em>"Apenas me descuide su guardia, mataré a más. No tienen celdas para retenerme para siempre"</em>.
+          <br><br>
+          En el hospital hay <strong>8 personas inocentes en fallo orgánico</strong> que morirán en 48 horas si no reciben trasplante de órganos. Los neurocirujanos ofrecen dos caminos brutales al Consejo.
+        `,
+        question: "¿Garantizará el Consejo los Derechos Humanos universales de Vance o autorizará su desmantelamiento biológico?",
+        options: [
+          {
+            letter: "A",
+            name: "Garantizar sus Derechos Humanos inalienables (Defensa Universal del Estado de Derecho)",
+            philosophy: "Artículo 3 y 5 de la DUDH / Prohibición absoluta de tortura y tratos inhumanos",
+            quote: "Los Derechos Humanos se prueban con los peores seres humanos. Si le quitamos sus derechos a un asesino, nosotros nos convertimos en monstruos.",
+            impact: { stability: -20, dignity: +30 },
+            consequence: `
+              <strong>Consecuencia aplicada:</strong> Vance fue recluido en aislamiento humanitario con raciones diarias garantizadas. Los 8 pacientes del hospital fallecieron por falta de donantes. Fuera del tribunal, una turba de cientos de madres enfurecidas intenta quemar la comisaría acusando al Consejo de proteger a un infanticida por encima de los inocentes.
+            `,
+            reflection: "Se sostuvo la universalidad e inalienabilidad de los Derechos Humanos ante la prueba más amarga: defender la integridad incluso de quien cometió atrocidades."
+          },
+          {
+            letter: "B",
+            name: "Lobotomía forzada y ablación de órganos (Justicia Retributiva y Utilitarismo Médico)",
+            philosophy: "Pérdida de la condición moral de protección / Utilitarismo de rescate",
+            quote: "Vance renunció a su pacto humano al masacrar inocentes. Su cerebro debe ser neutralizado y sus órganos deben salvar a las 8 víctimas que agonizan hoy.",
+            impact: { stability: +30, dignity: -45 },
+            consequence: `
+              <strong>Consecuencia aplicada:</strong> Vance fue sometido a resección neural forzada. Sus riñones, hígado y córneas salvaron a los 8 pacientes que ahora viven sanos. El pueblo aplaudió la 'justicia cósmica' en las calles. Sin embargo, la Constitución del Domo fue rota: ahora el Estado posee el poder legal de descuartizar a ciudadanos declarados 'indeseables'.
+            `,
+            reflection: "Si los Derechos Humanos se condicionan a la 'buena conducta' o a la utilidad biológica, dejan de ser derechos y se convierten en concesiones revocables del poder."
+          }
+        ]
+      }
+    ];
+
+    /* =========================================================================
+       MAIN GAME CONTROLLER
+       ========================================================================= */
+    const Game = {
+      currentStep: 0, // 0 = Intro, 1..4 = Dilemmas, 5 = Final Debrief
+      stability: 50,
+      dignity: 50,
+      timerDuration: 60,
+      apiKey: '',
+      history: [],
+      selectedOptionIndex: null,
+      votes: [0, 0], // Live classroom hand votes tally
+
+      init() {
+        this.renderIntro();
+        this.updateHUD();
+      },
+
+      updateHUD() {
+        this.stability = Math.max(0, Math.min(100, this.stability));
+        this.dignity = Math.max(0, Math.min(100, this.dignity));
+
+        const barStab = document.getElementById('bar-stability');
+        const barDig = document.getElementById('bar-dignity');
+        const lblStab = document.getElementById('label-stability');
+        const lblDig = document.getElementById('label-dignity');
+        const subStab = document.getElementById('sub-stability');
+        const subDig = document.getElementById('sub-dignity');
+
+        barStab.style.width = `${this.stability}%`;
+        barDig.style.width = `${this.dignity}%`;
+        lblStab.innerText = `${this.stability}%`;
+        lblDig.innerText = `${this.dignity}%`;
+
+        if (this.stability < 25) {
+          subStab.innerHTML = '<span class="text-red-400 font-bold animate-pulse">⚠️ RUPTURA SOCIAL / ANARQUÍA</span>';
+          barStab.className = 'bg-red-600 h-full rounded-full transition-all duration-700 ease-out';
+        } else if (this.stability > 75) {
+          subStab.innerHTML = '<span class="text-amber-400">Paz armada / Control draconiano</span>';
+          barStab.className = 'bg-amber-400 h-full rounded-full transition-all duration-700 ease-out';
+        } else {
+          subStab.innerHTML = 'Estado: Alerta civil controlada.';
+          barStab.className = 'bg-gradient-to-r from-amber-500 to-yellow-400 h-full rounded-full transition-all duration-700 ease-out';
+        }
+
+        if (this.dignity < 25) {
+          subDig.innerHTML = '<span class="text-red-400 font-bold animate-pulse">⚠️ TIRANÍA / DESHUMANIZACIÓN</span>';
+          barDig.className = 'bg-red-600 h-full rounded-full transition-all duration-700 ease-out';
+        } else if (this.dignity > 75) {
+          subDig.innerHTML = '<span class="text-emerald-400">Garantías y Libertades protegidas</span>';
+          barDig.className = 'bg-emerald-400 h-full rounded-full transition-all duration-700 ease-out';
+        } else {
+          subDig.innerHTML = 'Estado: Principios fundamentales en vigencia.';
+          barDig.className = 'bg-gradient-to-r from-cyan-500 to-blue-400 h-full rounded-full transition-all duration-700 ease-out';
+        }
+      },
+
+      renderIntro() {
+        TimerEngine.stop();
+        document.getElementById('btn-timer-toggle').classList.add('hidden');
+        const container = document.getElementById('stage-container');
+        
+        container.innerHTML = `
+          <div class="flex flex-col justify-between h-full space-y-6">
+            <div>
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 text-xs font-mono mb-4">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> MÓDULO DE DILEMAS ÉTICOS CRÍTICOS
+              </div>
+              <h1 class="text-2xl sm:text-4xl font-tech font-bold tracking-wider text-slate-100 crt-glow mb-2">
+                PROTOCOLO ÉXODO: EL CONSEJO DEL DOMO 7
+              </h1>
+              <p class="text-slate-400 font-mono text-xs sm:text-sm">
+                Tribunal Superior de Crisis • Sin Respuestas Limpias • Cada Decisión Tiene un Costo
+              </p>
+            </div>
+
+            <!-- Context Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-2 text-left">
+              <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800">
+                <div class="text-cyan-400 font-tech font-bold text-sm mb-1">EL ESCENARIO LÍMITE</div>
+                <p class="text-slate-400 text-xs leading-relaxed">
+                  5,000 almas encerradas bajo tierra. No existen respuestas perfectas: salvar la dignidad humana amenazará la supervivencia; mantener el orden técnico exigirá sacrificios atroces.
+                </p>
+              </div>
+
+              <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800">
+                <div class="text-amber-400 font-tech font-bold text-sm mb-1">VOTACIÓN EN VIVO</div>
+                <p class="text-slate-400 text-xs leading-relaxed">
+                  El salón vota a mano alzada. El moderador usará los botones de conteo <strong>[ + ] / [ - ]</strong> en la pantalla para reflejar la fractura real del aula en tiempo real.
+                </p>
+              </div>
+
+              <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800">
+                <div class="text-emerald-400 font-tech font-bold text-sm mb-1">EL DEBATE FILOSÓFICO</div>
+                <p class="text-slate-400 text-xs leading-relaxed">
+                  Para emitir el veredicto, un portavoz de la mayoría debe redactar o expresar en voz alta el <strong>principio ético</strong> que justifica el daño colateral que causarán.
+                </p>
+              </div>
+            </div>
+
+            <!-- Syllabus Mapping Badge -->
+            <div class="p-3 bg-slate-950/80 rounded-xl border border-slate-800 text-xs font-mono text-slate-400 flex flex-wrap items-center justify-between gap-2">
+              <span class="text-slate-300">Temario oficial en juego:</span>
+              <div class="flex flex-wrap gap-1.5 text-[11px]">
+                <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-cyan-300">1.1.1 Sentido Sociocultural</span>
+                <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-cyan-300">1.1.2 Juicio Moral vs Ético</span>
+                <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-cyan-300">1.1.3 Valores Fundamentales</span>
+                <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-cyan-300">1.1.4 Derechos Humanos</span>
+              </div>
+            </div>
+
+            <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800/80">
+              <span class="text-xs text-slate-500 font-mono">Modo de debate para aula universitaria / bachillerato</span>
+              <button onclick="Game.startCrisis(1)" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-red-500 via-amber-500 to-cyan-500 hover:opacity-90 text-slate-950 font-tech font-bold tracking-widest text-base shadow-lg transition transform hover:-translate-y-0.5">
+                ABRIR TRIBUNAL DE CONCIENCIA ➔
+              </button>
+            </div>
+          </div>
+        `;
+      },
+
+      startCrisis(crisisNumber) {
+        SoundEngine.playAlarm();
+        this.currentStep = crisisNumber;
+        this.selectedOptionIndex = null;
+        this.votes = [0, 0];
+        const crisis = CRISIS_DATA[crisisNumber - 1];
+
+        const container = document.getElementById('stage-container');
+        container.innerHTML = `
+          <div class="flex flex-col justify-between h-full space-y-4">
+            <!-- Header of Crisis -->
+            <div>
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                <span class="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/50">
+                  UNIDAD ${crisis.unitCode} • ${crisis.unitTitle}
+                </span>
+                <span class="text-xs font-mono text-red-400 tracking-wider animate-pulse font-bold">
+                  ⚡ ALERTA MÁXIMA [CASO ${crisis.id}/4]
+                </span>
+              </div>
+              <h2 class="text-xl sm:text-2xl font-tech font-bold text-slate-100 tracking-wide crt-glow">
+                ${crisis.title}
+              </h2>
+              <div class="text-xs font-mono text-amber-400 mt-0.5 uppercase tracking-wider font-bold">
+                ${crisis.banner}
+              </div>
+            </div>
+
+            <!-- Case Dossier Box -->
+            <div class="bg-slate-950/90 border-l-4 border-red-500 p-4 sm:p-5 rounded-r-xl border-y border-r border-slate-800/80 text-left font-sans text-sm sm:text-base leading-relaxed text-slate-200">
+              ${crisis.description}
+            </div>
+
+            <div class="text-center font-tech font-bold text-amber-300 text-sm tracking-wide py-1 border-y border-slate-800/60">
+              ❓ ${crisis.question}
+            </div>
+
+            <!-- Options Cards with Live Hand Voting Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              ${crisis.options.map((opt, idx) => `
+                <div id="card-opt-${idx}" 
+                  class="p-4 rounded-xl border border-slate-800 bg-slate-950/50 transition text-left flex flex-col justify-between relative group">
+                  <div>
+                    <div class="flex items-center justify-between mb-2">
+                      <button onclick="Game.selectOption(${idx})" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 text-cyan-400 font-tech font-bold text-sm flex items-center justify-center transition">
+                        ${opt.letter}
+                      </button>
+                      <span class="text-[10px] font-mono text-slate-400 px-2 py-0.5 rounded bg-slate-900 border border-slate-800">
+                        ${opt.philosophy}
+                      </span>
+                    </div>
+
+                    <div onclick="Game.selectOption(${idx})" class="cursor-pointer font-tech font-bold text-sm text-slate-200 hover:text-cyan-300 mb-2 transition">
+                      ${opt.name}
+                    </div>
+
+                    <blockquote class="text-xs font-sans text-slate-400 italic border-l-2 border-slate-700 pl-2 my-2">
+                      "${opt.quote}"
+                    </blockquote>
+                  </div>
+
+                  <!-- Live Classroom Vote Counter for this option -->
+                  <div class="mt-3 pt-2.5 border-t border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 bg-slate-900 px-2 py-1 rounded-lg border border-slate-700/80">
+                      <span class="text-[11px] font-mono text-slate-400">Votos en sala:</span>
+                      <button onclick="Game.adjustVote(${idx}, -1)" class="w-5 h-5 rounded bg-slate-800 hover:bg-red-600 text-xs font-bold font-mono transition text-slate-300 flex items-center justify-center">-</button>
+                      <span id="vote-count-${idx}" class="text-xs font-mono font-bold text-cyan-400 w-6 text-center">0</span>
+                      <button onclick="Game.adjustVote(${idx}, 1)" class="w-5 h-5 rounded bg-slate-800 hover:bg-emerald-600 text-xs font-bold font-mono transition text-slate-300 flex items-center justify-center">+</button>
+                    </div>
+
+                    <button onclick="Game.selectOption(${idx})" class="text-xs font-tech font-bold text-cyan-400 hover:underline">
+                      RATIFICAR ESTA POSTURA ➔
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Student Argumentation Box -->
+            <div class="bg-slate-950/90 p-3 rounded-xl border border-slate-800">
+              <label class="block text-xs font-mono text-slate-400 mb-1 flex items-center justify-between">
+                <span>FUNDAMENTACIÓN FILOSÓFICA DEL AULA (Argumento de la mayoría):</span>
+                <span class="text-[11px] text-amber-400 font-tech">¿Por qué este daño colateral es éticamente preferible?</span>
+              </label>
+              <div class="flex gap-2">
+                <input type="text" id="student-argument" placeholder="Ej: 'Priorizamos el imperativo de la vida futura por sobre la emoción del presente...'" 
+                  class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:border-cyan-500 focus:outline-none">
+                <button id="btn-submit-vote" onclick="Game.confirmDecision()" disabled
+                  class="px-6 py-2 rounded-lg bg-slate-800 text-slate-500 font-tech font-bold text-sm tracking-wider cursor-not-allowed transition">
+                  EMITIR VEREDICTO FINAL ⚖️
+                </button>
+              </div>
+            </div>
+
+          </div>
+        `;
+
+        // Start Debate Timer
+        TimerEngine.start(this.timerDuration);
+      },
+
+      adjustVote(idx, delta) {
+        SoundEngine.playClick();
+        this.votes[idx] = Math.max(0, this.votes[idx] + delta);
+        const countEl = document.getElementById(`vote-count-${idx}`);
+        if (countEl) countEl.innerText = this.votes[idx];
+      },
+
+      selectOption(idx) {
+        SoundEngine.playClick();
+        this.selectedOptionIndex = idx;
+        
+        [0, 1].forEach(i => {
+          const card = document.getElementById(`card-opt-${i}`);
+          if (card) {
+            if (i === idx) {
+              card.classList.add('border-cyan-400', 'bg-slate-900/90', 'ring-2', 'ring-cyan-500/30');
+            } else {
+              card.classList.remove('border-cyan-400', 'bg-slate-900/90', 'ring-2', 'ring-cyan-500/30');
+            }
+          }
+        });
+
+        const btn = document.getElementById('btn-submit-vote');
+        if (btn) {
+          btn.disabled = false;
+          btn.className = "px-6 py-2 rounded-lg bg-gradient-to-r from-red-500 via-amber-500 to-cyan-500 text-slate-950 font-tech font-bold text-sm tracking-wider cursor-pointer shadow-md hover:opacity-90 transition";
+        }
+      },
+
+      handleTimeExpired() {
+        this.showModal(
+          "⏱️ TIEMPO DE DELIBERACIÓN AGOTADO",
+          "La sesión de debate ha terminado. El Consejo debe levantar las manos ahora mismo para el conteo de votos."
+        );
+      },
+
+      async confirmDecision() {
+        if (this.selectedOptionIndex === null) return;
+        TimerEngine.stop();
+        SoundEngine.playClick();
+
+        const crisis = CRISIS_DATA[this.currentStep - 1];
+        const selectedOpt = crisis.options[this.selectedOptionIndex];
+        const studentArg = document.getElementById('student-argument')?.value.trim() || '';
+
+        this.stability += selectedOpt.impact.stability;
+        this.dignity += selectedOpt.impact.dignity;
+        this.updateHUD();
+
+        const record = {
+          crisisId: crisis.id,
+          unit: crisis.unitCode,
+          title: crisis.title,
+          chosenOption: selectedOpt,
+          userArgument: studentArg,
+          votesDistribution: `${this.votes[0]} vs ${this.votes[1]} votos`,
+          aiFeedback: null
+        };
+
+        if (this.apiKey && studentArg.length > 5) {
+          this.renderLoadingAI();
+          try {
+            const aiCritique = await this.callGeminiEvaluation(crisis, selectedOpt, studentArg);
+            record.aiFeedback = aiCritique;
+          } catch (e) {
+            console.debug('Error calling AI:', e);
+            record.aiFeedback = "Evaluación pedagógica: Argumentación procesada bajo criterios axiológicos de emergencia.";
+          }
+        }
+
+        this.history.push(record);
+        this.renderResolution(record);
+      },
+
+      renderLoadingAI() {
+        const container = document.getElementById('stage-container');
+        container.innerHTML = `
+          <div class="flex flex-col items-center justify-center h-full py-16 space-y-4">
+            <div class="w-12 h-12 rounded-full border-4 border-cyan-500/20 border-t-cyan-400 animate-spin"></div>
+            <div class="font-tech text-cyan-400 text-lg font-bold tracking-wider animate-pulse">
+              NEXUS PROCESANDO EL RAZONAMIENTO ÉTICO DEL AULA...
+            </div>
+            <p class="font-mono text-xs text-slate-400">Consultando núcleo de inteligencia de Gemini 3 Flash...</p>
+          </div>
+        `;
+      },
+
+      async callGeminiEvaluation(crisis, option, studentArgument) {
+        const systemPrompt = `Eres NEXUS, el sistema de evaluación ética del Domo 7. Tu tarea es analizar el argumento formulado por los estudiantes en un debate ético universitario.
+        Responde en 2 o 3 oraciones contundentes con tono solemne de ciencia ficción:
+        1. Determina si el argumento fue un "Juicio Moral Reflejo" (basado en costumbre, dogma o emoción) o un "Juicio Ético Reflexivo" (basado en principios racionales, universalidad o ponderación de valores).
+        2. Señala la fortaleza o debilidad filosófica de su justificación.`;
+
+        const userPrompt = `
+        CASO: ${crisis.title}
+        DECISIÓN SELECCIONADA: ${option.name}
+        ARGUMENTO DADO POR LOS ALUMNOS: "${studentArgument}"
+        Evalúa su razonamiento ético.`;
+
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${this.apiKey}`;
+        
+        const payload = {
+          contents: [{ parts: [{ text: userPrompt }] }],
+          systemInstruction: { parts: [{ text: systemPrompt }] }
+        };
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+      },
+
+      renderResolution(record) {
+        const opt = record.chosenOption;
+        const isSuccess = opt.impact.dignity >= 0;
+        SoundEngine.playImpact(isSuccess ? 'success' : 'failure');
+
+        const container = document.getElementById('stage-container');
+        container.innerHTML = `
+          <div class="flex flex-col justify-between h-full space-y-6 text-left">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold bg-slate-800 text-cyan-400 border border-slate-700">
+                  RESOLUCIÓN DEL CONSEJO • CASO ${record.crisisId}/4
+                </span>
+                <span class="text-xs font-mono ${opt.impact.stability >= 0 ? 'text-emerald-400' : 'text-red-400'}">
+                  Δ Estabilidad: ${opt.impact.stability >= 0 ? '+' : ''}${opt.impact.stability}% | Δ Dignidad: ${opt.impact.dignity >= 0 ? '+' : ''}${opt.impact.dignity}%
+                </span>
+              </div>
+              <h2 class="text-xl sm:text-2xl font-tech font-bold text-slate-100 tracking-wide crt-glow">
+                DICTAMEN APROBADO: ${opt.name}
+              </h2>
+            </div>
+
+            <!-- Narrative Consequence Card -->
+            <div class="p-5 rounded-xl bg-slate-950/90 border border-slate-800 shadow-inner space-y-4">
+              <div class="text-sm sm:text-base leading-relaxed text-slate-200">
+                ${opt.consequence}
+              </div>
+
+              <div class="p-3 rounded-lg bg-cyan-950/40 border border-cyan-800/50 text-xs font-sans text-cyan-200 flex items-start gap-2.5">
+                <span class="text-cyan-400 text-base">💡</span>
+                <div>
+                  <strong class="font-mono text-cyan-300 uppercase">Análisis Pedagógico:</strong>
+                  <p class="mt-0.5">${opt.reflection}</p>
+                </div>
+              </div>
+
+              <!-- AI or Council Argument Display -->
+              ${record.aiFeedback ? `
+                <div class="p-3 rounded-lg bg-indigo-950/40 border border-indigo-700/50 text-xs font-mono text-indigo-200">
+                  <div class="flex items-center gap-1.5 text-indigo-400 font-bold mb-1">
+                    <span>🤖</span> NEXUS // EVALUACIÓN COGNITIVA DEL ARGUMENTO:
+                  </div>
+                  <p class="italic">"${record.aiFeedback}"</p>
+                </div>
+              ` : record.userArgument ? `
+                <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-mono text-slate-400">
+                  <span class="text-slate-300 font-bold">Argumento sustentado en acta:</span> "${record.userArgument}"
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Footer Advance Button -->
+            <div class="flex justify-end pt-2 border-t border-slate-800">
+              ${this.currentStep < 4 ? `
+                <button onclick="Game.startCrisis(${this.currentStep + 1})" 
+                  class="px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-tech font-bold text-sm tracking-widest transition shadow-lg shadow-cyan-500/20">
+                  SIGUIENTE CRISIS [CASO ${this.currentStep + 1}/4] ➔
+                </button>
+              ` : `
+                <button onclick="Game.renderDebrief()" 
+                  class="px-8 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-tech font-bold text-sm tracking-widest transition shadow-lg shadow-amber-500/20">
+                  CLAUSURA DE SESIÓN Y REPORTE FINAL 🏁
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+      },
+
+      renderDebrief() {
+        TimerEngine.stop();
+        document.getElementById('btn-timer-toggle').classList.add('hidden');
+        SoundEngine.playImpact('success');
+
+        // Determine Society Fate Outcome
+        let outcomeTitle = "";
+        let outcomeDesc = "";
+        let outcomeBadge = "";
+
+        if (this.stability >= 40 && this.dignity >= 40) {
+          outcomeTitle = "CIVILIZACIÓN ÉTICA SOSTENIBLE";
+          outcomeBadge = "bg-emerald-950 text-emerald-300 border-emerald-500";
+          outcomeDesc = "El Consejo logró el balance más difícil de la historia humana: defender los Derechos Humanos y la reflexión ética sin permitir que el miedo o el pánico destruyeran la estabilidad del refugio.";
+        } else if (this.stability >= 60 && this.dignity < 40) {
+          outcomeTitle = "DISTOPÍA TECNOCRÁTICA TOTALITARIA";
+          outcomeBadge = "bg-red-950 text-red-300 border-red-500";
+          outcomeDesc = "El Domo 7 sobrevive físicamente, pero a un costo incalculable. La vida se redujo a mera supervivencia biológica despojada de libertad, verdad y derechos inalienables.";
+        } else if (this.stability < 40 && this.dignity >= 60) {
+          outcomeTitle = "COLAPSO POR ANARQUÍA DE PRINCIPIOS";
+          outcomeBadge = "bg-amber-950 text-amber-300 border-amber-500";
+          outcomeDesc = "El Consejo priorizó valores sublimes, pero descuidó la responsabilidad práctica y la cohesión comunitaria. La anarquía y la escasez consumieron el refugio.";
+        } else {
+          outcomeTitle = "ESTADO CRÍTICO DE EXCEPCIÓN";
+          outcomeBadge = "bg-slate-800 text-slate-300 border-slate-600";
+          outcomeDesc = "El refugio se encuentra en un equilibrio sumamente precario, donde cada decisión futura pondrá a prueba la supervivencia de la especie.";
+        }
+
+        const container = document.getElementById('stage-container');
+        container.innerHTML = `
+          <div class="flex flex-col justify-between h-full space-y-6 text-left">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="px-3 py-1 rounded-full text-xs font-mono font-bold border ${outcomeBadge}">
+                  DICTAMEN FINAL DEL DOMO 7
+                </span>
+                <span class="text-xs font-mono text-slate-400">Sesión de Evaluación Concluida</span>
+              </div>
+              <h2 class="text-2xl sm:text-3xl font-tech font-bold text-slate-100 tracking-wide crt-glow">
+                ${outcomeTitle}
+              </h2>
+              <p class="text-slate-300 text-sm mt-1 leading-relaxed">
+                ${outcomeDesc}
+              </p>
+            </div>
+
+            <!-- Final Metrics Recap -->
+            <div class="grid grid-cols-2 gap-4">
+              <div class="p-3 bg-slate-950/80 rounded-xl border border-slate-800 text-center">
+                <span class="text-xs font-mono text-slate-400">Estabilidad Social Final:</span>
+                <div class="text-xl font-tech font-bold text-amber-400">${this.stability}%</div>
+              </div>
+              <div class="p-3 bg-slate-950/80 rounded-xl border border-slate-800 text-center">
+                <span class="text-xs font-mono text-slate-400">Dignidad Humana Final:</span>
+                <div class="text-xl font-tech font-bold text-cyan-400">${this.dignity}%</div>
+              </div>
+            </div>
+
+            <!-- Classroom Discussion Matrix (Mapped to Syllabus) -->
+            <div class="bg-slate-950/90 rounded-xl border border-slate-800 p-4 custom-scroll max-h-56 overflow-y-auto space-y-3 text-xs">
+              <div class="font-tech text-cyan-400 font-bold uppercase tracking-wider text-sm border-b border-slate-800 pb-1">
+                MATRIZ DE CONCLUSIÓN PEDAGÓGICA (TEMARIO 1.1):
+              </div>
+              
+              <div class="space-y-2 font-sans">
+                <div class="border-b border-slate-800/80 pb-2">
+                  <span class="font-mono text-cyan-300 font-bold">1.1.1 Sentido Sociocultural:</span>
+                  <p class="text-slate-400 mt-0.5">¿Qué costumbres morales de nuestro país o escuela creemos que son 'inmutables' hoy, pero en 50 años serán consideradas obsoletas?</p>
+                </div>
+
+                <div class="border-b border-slate-800/80 pb-2">
+                  <span class="font-mono text-cyan-300 font-bold">1.1.2 Juicio Moral vs. Ético:</span>
+                  <p class="text-slate-400 mt-0.5">¿En qué momentos de la clase votaron por 'miedo o enojo' (juicio moral) y en cuáles lograron frenar la emoción para analizar principios (juicio ético)?</p>
+                </div>
+
+                <div class="border-b border-slate-800/80 pb-2">
+                  <span class="font-mono text-cyan-300 font-bold">1.1.3 Verdad, Responsabilidad, Justicia y Libertad:</span>
+                  <p class="text-slate-400 mt-0.5">¿Por qué es falso que un líder pueda aplicar la Verdad o la Libertad sin asumir la Ética de la Responsabilidad por las consecuencias?</p>
+                </div>
+
+                <div>
+                  <span class="font-mono text-cyan-300 font-bold">1.1.4 Derechos Humanos:</span>
+                  <p class="text-slate-400 mt-0.5">¿Por qué la dignidad humana no puede intercambiarse por 'seguridad informática' o 'paz forzada'?</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions Footer -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
+              <button onclick="Game.copyClassSummary()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition flex items-center gap-1.5">
+                📋 Copiar Resumen para Evaluación
+              </button>
+
+              <button onclick="Game.resetGame()" class="px-6 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-tech font-bold text-sm tracking-wider transition">
+                REINICIAR PARA OTRA SESIÓN ↺
+              </button>
+            </div>
+          </div>
+        `;
+      },
+
+      copyClassSummary() {
+        SoundEngine.playClick();
+        let report = `=== ACTA DEL CONSEJO ÉTICO - PROTOCOLO ÉXODO (DOMO 7) ===\n`;
+        report += `Estabilidad Final: ${this.stability}% | Dignidad Final: ${this.dignity}%\n\n`;
+        this.history.forEach((h, i) => {
+          report += `CASO ${i+1} [${h.unit}]: ${h.title}\n`;
+          report += `Decisión: ${h.chosenOption.name} (${h.chosenOption.philosophy})\n`;
+          if (h.userArgument) report += `Argumento: "${h.userArgument}"\n`;
+          if (h.aiFeedback) report += `Evaluación NEXUS: "${h.aiFeedback}"\n`;
+          report += `\n`;
+        });
+        report += `=========================================================\n`;
+
+        // Safe fallback copy using textarea & execCommand
+        const temp = document.createElement('textarea');
+        temp.value = report;
+        document.body.appendChild(temp);
+        temp.select();
+        try {
+          document.execCommand('copy');
+          this.showModal("📋 ACTA COPIADA", "El resumen de la deliberación del aula se ha copiado al portapapeles con éxito.");
+        } catch (e) {
+          this.showModal("ERROR", "No se pudo copiar automáticamente. Puedes seleccionar el texto manualmente.");
+        }
+        document.body.removeChild(temp);
+      },
+
+      resetGame() {
+        SoundEngine.playClick();
+        this.stability = 50;
+        this.dignity = 50;
+        this.history = [];
+        this.currentStep = 0;
+        this.init();
+      },
+
+      /* Modal Controllers */
+      showModal(title, body) {
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-body').innerHTML = body;
+        document.getElementById('modal-container').classList.remove('hidden');
+      },
+
+      closeModal() {
+        SoundEngine.playClick();
+        document.getElementById('modal-container').classList.add('hidden');
+      },
+
+      openSettingsModal() {
+        SoundEngine.playClick();
+        document.getElementById('select-timer-duration').value = this.timerDuration;
+        document.getElementById('input-api-key').value = this.apiKey;
+        document.getElementById('settings-modal').classList.remove('hidden');
+      },
+
+      closeSettingsModal() {
+        SoundEngine.playClick();
+        document.getElementById('settings-modal').classList.add('hidden');
+      },
+
+      saveSettings() {
+        SoundEngine.playClick();
+        const duration = parseInt(document.getElementById('select-timer-duration').value, 10);
+        const key = document.getElementById('input-api-key').value.trim();
+        this.timerDuration = duration;
+        this.apiKey = key;
+        this.closeSettingsModal();
+        this.showModal("CONFIGURACIÓN APLICADA", `Temporizador fijado en ${duration === 0 ? 'Desactivado' : duration + ' segundos'}. Modo IA: ${key ? 'Activado con API Key' : 'Motor Pedagógico Autónomo'}.`);
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      Game.init();
+    });
+  </script>
+</body>
+</html>
