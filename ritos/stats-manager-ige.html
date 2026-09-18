@@ -1,0 +1,1832 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STATSMANAGER IGE | Simulador de Control Estadístico y Decisión Ejecutiva</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for executive analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts: Plus Jakarta Sans for executive feel -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              900: '#0c4a6e',
+            },
+            executive: {
+              dark: '#0b1120',
+              card: '#151f32',
+              cardHover: '#1c2a44',
+              border: '#24344d',
+              accent: '#38bdf8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom polished scrollbar and styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b1120;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #24344d;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8;
+    }
+    .metric-badge {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .metric-badge:hover {
+      transform: translateY(-2px);
+    }
+    canvas {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .math-symbol {
+      font-family: 'Times New Roman', serif;
+      font-style: italic;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body class="bg-executive-dark text-slate-100 min-h-full font-sans antialiased flex flex-col selection:bg-brand-500 selection:text-white">
+
+  <!-- TOP HEADER / EXECUTIVE NAVBAR -->
+  <header class="border-b border-executive-border bg-executive-dark/95 backdrop-blur sticky top-0 z-40 px-4 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
+        <i data-lucide="bar-chart-3" class="w-5 h-5 text-white"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-1.5">
+            STATSMANAGER <span class="text-sky-400 font-extrabold text-xs px-2 py-0.5 rounded bg-sky-950 border border-sky-800">IGE 3.2</span>
+          </h1>
+          <span class="hidden sm:inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="hidden sm:inline-block text-[11px] font-medium text-emerald-400 uppercase tracking-wider">Simulador Gerencial</span>
+        </div>
+        <p class="text-xs text-slate-400 font-medium">Estadística Descriptiva para la Toma de Decisiones en Operaciones</p>
+      </div>
+    </div>
+
+    <!-- SOUND & GUIDE CONTROLS -->
+    <div class="flex items-center gap-2">
+      <button id="audioToggleBtn" onclick="toggleAudio()" class="px-3 py-1.5 rounded-lg border border-executive-border bg-executive-card text-xs font-medium text-slate-300 hover:text-white hover:border-slate-500 flex items-center gap-1.5 transition">
+        <i id="audioIcon" data-lucide="volume-2" class="w-4 h-4 text-emerald-400"></i>
+        <span class="hidden sm:inline" id="audioLabel">Audio ON</span>
+      </button>
+
+      <button onclick="openGuideModal()" class="px-3 py-1.5 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-300 hover:bg-sky-500/20 text-xs font-semibold flex items-center gap-1.5 transition">
+        <i data-lucide="book-open" class="w-4 h-4 text-sky-400"></i>
+        <span>Criterio IGE</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN TABS SELECTOR (MODOS) -->
+  <div class="bg-slate-900/90 border-b border-executive-border px-4 lg:px-8 py-2.5">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div class="inline-flex p-1 bg-slate-950 rounded-xl border border-executive-border w-full md:w-auto overflow-x-auto">
+        <button id="tab-btn-1" onclick="switchMode(1)" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-sky-600 text-white shadow-md">
+          <i data-lucide="scale" class="w-4 h-4"></i>
+          <span>1. El Balancín Financiero</span>
+        </button>
+        <button id="tab-btn-2" onclick="switchMode(2)" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-400 hover:text-slate-200 transition">
+          <i data-lucide="factory" class="w-4 h-4"></i>
+          <span>2. Director de Operaciones</span>
+        </button>
+        <button id="tab-btn-3" onclick="switchMode(3)" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-400 hover:text-slate-200 transition">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>3. Duelo de Proveedores</span>
+        </button>
+      </div>
+
+      <!-- PROCESS SPECS SUMMARY BANNER -->
+      <div class="flex items-center gap-2 text-xs bg-executive-card border border-executive-border px-3 py-1.5 rounded-lg text-slate-300">
+        <span class="text-slate-400 font-medium">Especificación:</span>
+        <span class="font-bold text-white bg-slate-800 px-2 py-0.5 rounded border border-slate-700">500.0 g</span>
+        <span class="text-slate-500">|</span>
+        <span class="text-emerald-400 font-medium">Tolerancia: 495.0 g – 505.0 g (±5 g)</span>
+        <span class="text-slate-500">|</span>
+        <span class="text-sky-300 font-medium">Lote: n = 50 piezas</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN VIEWPORT CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 space-y-6">
+
+    <!-- ============================================================= -->
+    <!-- MODO 1: EL BALANCÍN FINANCIERO (CONSTRUCCIÓN DE INTUICIÓN)    -->
+    <!-- ============================================================= -->
+    <div id="mode-1" class="space-y-6">
+      <!-- Description bar -->
+      <div class="bg-gradient-to-r from-sky-950/40 via-slate-900 to-indigo-950/30 border border-sky-800/40 p-4 sm:p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 text-xs font-bold tracking-wide uppercase">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Intuición Física vs. Estadística
+          </div>
+          <h2 class="text-lg sm:text-xl font-bold text-white">¿Por qué el promedio miente cuando hay anomalías?</h2>
+          <p class="text-xs sm:text-sm text-slate-300 max-w-2xl">
+            El <strong>promedio (<span class="math-symbol">x̄</span>)</strong> es el centro de gravedad físico: cualquier valor atípico lo desplaza de golpe. La <strong>mediana (<span class="math-symbol">Me</span>)</strong> es la pieza central #25: inmune a valores extremos. Arrastra las piezas o utiliza los presets.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="applyBeamPreset('normal')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5">
+            <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-400"></i> Lote Controlado
+          </button>
+          <button onclick="applyBeamPreset('outlier')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-950/60 hover:bg-rose-900/70 text-rose-200 border border-rose-800/60 transition flex items-center gap-1.5">
+            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-rose-400"></i> Inyectar Outlier (+545g)
+          </button>
+          <button onclick="applyBeamPreset('bimodal')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950/60 hover:bg-amber-900/70 text-amber-200 border border-amber-800/60 transition flex items-center gap-1.5">
+            <i data-lucide="shuffle" class="w-3.5 h-3.5 text-amber-400"></i> Dos Turnos (Bimodal)
+          </button>
+          <button onclick="resetBeamData()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Regenerar Aleatorio
+          </button>
+        </div>
+      </div>
+
+      <!-- LIVE METRIC CARDS ROW -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <!-- Promedio -->
+        <div class="bg-executive-card border border-executive-border rounded-xl p-3.5 metric-badge relative overflow-hidden group">
+          <div class="absolute top-0 right-0 w-12 h-12 bg-sky-500/10 rounded-bl-full pointer-events-none transition group-hover:bg-sky-500/20"></div>
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+            <span>Promedio (<span class="math-symbol text-sky-400">x̄</span>)</span>
+            <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
+          </div>
+          <div class="text-2xl font-black text-white mt-1" id="m1-mean">500.00 <span class="text-xs font-normal text-slate-400">g</span></div>
+          <div class="text-[11px] font-semibold mt-0.5 flex items-center gap-1" id="m1-mean-status-wrap">
+            <span id="m1-mean-status" class="text-sky-400">En objetivo (500g)</span>
+          </div>
+        </div>
+
+        <!-- Mediana -->
+        <div class="bg-executive-card border border-executive-border rounded-xl p-3.5 metric-badge relative overflow-hidden group">
+          <div class="absolute top-0 right-0 w-12 h-12 bg-purple-500/10 rounded-bl-full pointer-events-none transition group-hover:bg-purple-500/20"></div>
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+            <span>Mediana (<span class="math-symbol text-purple-400">Me</span>)</span>
+            <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
+          </div>
+          <div class="text-2xl font-black text-white mt-1" id="m1-median">500.00 <span class="text-xs font-normal text-slate-400">g</span></div>
+          <div class="text-[11px] text-purple-400 font-semibold mt-0.5">Pieza Central #25</div>
+        </div>
+
+        <!-- Moda -->
+        <div class="bg-executive-card border border-executive-border rounded-xl p-3.5 metric-badge relative overflow-hidden group">
+          <div class="absolute top-0 right-0 w-12 h-12 bg-emerald-500/10 rounded-bl-full pointer-events-none transition group-hover:bg-emerald-500/20"></div>
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+            <span>Moda (<span class="math-symbol text-emerald-400">Mo</span>)</span>
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          </div>
+          <div class="text-2xl font-black text-white mt-1" id="m1-mode">500.0 <span class="text-xs font-normal text-slate-400">g</span></div>
+          <div class="text-[11px] text-emerald-400 font-semibold mt-0.5" id="m1-mode-type">Unimodal</div>
+        </div>
+
+        <!-- Desviación Estándar -->
+        <div class="bg-executive-card border border-executive-border rounded-xl p-3.5 metric-badge relative overflow-hidden group">
+          <div class="absolute top-0 right-0 w-12 h-12 bg-amber-500/10 rounded-bl-full pointer-events-none transition group-hover:bg-amber-500/20"></div>
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+            <span>Desv. Estándar (<span class="math-symbol text-amber-400">s</span>)</span>
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+          </div>
+          <div class="text-2xl font-black text-white mt-1" id="m1-std">1.25 <span class="text-xs font-normal text-slate-400">g</span></div>
+          <div class="text-[11px] font-semibold mt-0.5 text-emerald-400" id="m1-std-label">Dispersión Óptima (Baja)</div>
+        </div>
+
+        <!-- Varianza -->
+        <div class="bg-executive-card border border-executive-border rounded-xl p-3.5 metric-badge relative overflow-hidden group">
+          <div class="absolute top-0 right-0 w-12 h-12 bg-indigo-500/10 rounded-bl-full pointer-events-none transition group-hover:bg-indigo-500/20"></div>
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+            <span>Varianza (<span class="math-symbol text-indigo-400">s²</span>)</span>
+            <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
+          </div>
+          <div class="text-2xl font-black text-white mt-1" id="m1-var">1.56 <span class="text-xs font-normal text-slate-400">g²</span></div>
+          <div class="text-[11px] text-indigo-400 font-semibold mt-0.5">Dispersión cuadrática</div>
+        </div>
+
+        <!-- Piezas Fuera de Norma -->
+        <div class="bg-executive-card border border-executive-border rounded-xl p-3.5 metric-badge relative overflow-hidden group">
+          <div class="absolute top-0 right-0 w-12 h-12 bg-rose-500/10 rounded-bl-full pointer-events-none transition group-hover:bg-rose-500/20"></div>
+          <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+            <span>Fuera de Tol.</span>
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span>
+          </div>
+          <div class="text-2xl font-black text-white mt-1" id="m1-defects">0 <span class="text-xs font-normal text-slate-400">piezas</span></div>
+          <div class="text-[11px] text-rose-400 font-semibold mt-0.5" id="m1-defect-rate">0.0% rechazo</div>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE PHYSICS CANVAS (BALANCÍN) -->
+      <div class="bg-executive-card border border-executive-border rounded-2xl p-4 sm:p-6 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-executive-border pb-3">
+          <div class="flex items-center gap-3">
+            <span class="p-2 rounded-lg bg-sky-500/10 text-sky-400"><i data-lucide="activity" class="w-5 h-5"></i></span>
+            <div>
+              <h3 class="font-bold text-white text-base">Balanza de Pesaje Dinámico en Vivo</h3>
+              <p class="text-xs text-slate-400">Arrastra cualquier pieza horizontalmente para ver cómo el fulcro se desplaza para balancear el sistema.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-4 text-xs font-medium">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-sky-400 rounded-sm inline-block"></span> Fulcro: Promedio (<span class="math-symbol">x̄</span>)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-purple-400 rounded-sm inline-block"></span> Banderín: Mediana (<span class="math-symbol">Me</span>)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-emerald-500/30 border border-emerald-500 rounded-sm inline-block"></span> Tolerancia (495–505g)</span>
+          </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="relative w-full h-72 sm:h-80 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden flex items-center justify-center">
+          <canvas id="beamCanvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+          <div id="canvasTooltip" class="hidden absolute pointer-events-none bg-slate-900/95 border border-sky-500 text-white text-[11px] px-2 py-1 rounded shadow-xl font-mono z-20"></div>
+        </div>
+
+        <!-- Executive Insight Box for Mode 1 -->
+        <div id="m1-insight-box" class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-sm flex items-start gap-3 transition">
+          <div class="p-2 rounded-lg bg-sky-500/10 text-sky-400 shrink-0 mt-0.5">
+            <i data-lucide="lightbulb" class="w-4 h-4"></i>
+          </div>
+          <div class="space-y-1">
+            <h4 class="font-bold text-white text-xs uppercase tracking-wider text-sky-400">Diagnóstico de Gestión Empresarial en Tiempo Real</h4>
+            <p id="m1-insight-text" class="text-xs text-slate-300 leading-relaxed">
+              El proceso se encuentra perfectamente centrado en los 500.0 g y la dispersión es baja (s ≈ 1.25 g). El promedio coincide con la mediana, lo cual indica simetría y estabilidad operativa. No hay merma por sobredimensionamiento ni multas por contenido neto.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- MODO 2: DIRECTOR DE OPERACIONES (EL RETO DE LOS LOTES)       -->
+    <!-- ============================================================= -->
+    <div id="mode-2" class="hidden space-y-6">
+      <!-- Scenario Selector and Status -->
+      <div class="bg-gradient-to-r from-slate-900 via-executive-card to-slate-900 border border-executive-border p-5 rounded-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+        <div class="space-y-1">
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold uppercase">
+            <i data-lucide="briefcase" class="w-3.5 h-3.5"></i> Mando y Control de Calidad
+          </div>
+          <h2 class="text-lg sm:text-xl font-bold text-white">Casos Críticos de Turno en Planta</h2>
+          <p class="text-xs sm:text-sm text-slate-300 max-w-2xl">
+            Como Director de Operaciones, recibes el reporte de 50 piezas de la línea de ensamble. Cada decisión errónea genera multas contractuales o merma de materia prima.
+          </p>
+        </div>
+
+        <!-- Case Selector Buttons -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="loadScenario(1)" id="sc-btn-1" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition bg-sky-600 text-white border-sky-500 shadow">
+            Caso 1: El Espejismo
+          </button>
+          <button onclick="loadScenario(2)" id="sc-btn-2" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition bg-slate-800 text-slate-300 border-slate-700 hover:text-white">
+            Caso 2: La Rebaba Solitaria
+          </button>
+          <button onclick="loadScenario(3)" id="sc-btn-3" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition bg-slate-800 text-slate-300 border-slate-700 hover:text-white">
+            Caso 3: Regalando Ganancias
+          </button>
+          <button onclick="loadScenario(4)" id="sc-btn-4" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition bg-slate-800 text-slate-300 border-slate-700 hover:text-white">
+            Caso 4: Turnos Gemelos
+          </button>
+          <button onclick="loadScenario(5)" id="sc-btn-5" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition bg-slate-800 text-slate-300 border-slate-700 hover:text-white">
+            Caso 5: Calidad Six Sigma
+          </button>
+        </div>
+      </div>
+
+      <!-- SCENARIO DETAILS & FINANCIAL BOARD -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left 2 Cols: Distribution Chart and Stats -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Chart Card -->
+          <div class="bg-executive-card border border-executive-border rounded-2xl p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-executive-border pb-3">
+              <div>
+                <span id="sc-badge" class="text-[11px] font-bold uppercase tracking-wider text-sky-400 bg-sky-950/80 px-2 py-0.5 rounded border border-sky-800">CASO 1</span>
+                <h3 id="sc-title" class="text-base font-bold text-white mt-1">El Espejismo del Promedio</h3>
+              </div>
+              <div class="text-right">
+                <span class="text-xs text-slate-400">Meta: 500 g</span>
+                <p id="sc-brief" class="text-xs font-semibold text-amber-400">Promedio = 500.1 g | s = 7.20 g (Dispersión Severa)</p>
+              </div>
+            </div>
+
+            <!-- Chart.js Canvas -->
+            <div class="h-64 sm:h-72 w-full">
+              <canvas id="scenarioChart"></canvas>
+            </div>
+
+            <!-- Live Statistical Matrix -->
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-executive-border text-center">
+              <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                <span class="text-[11px] text-slate-400 block font-medium">Promedio (<span class="math-symbol">x̄</span>)</span>
+                <span id="sc-stat-mean" class="text-base font-extrabold text-white">500.10 g</span>
+              </div>
+              <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                <span class="text-[11px] text-slate-400 block font-medium">Mediana (<span class="math-symbol">Me</span>)</span>
+                <span id="sc-stat-median" class="text-base font-extrabold text-white">500.10 g</span>
+              </div>
+              <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                <span class="text-[11px] text-slate-400 block font-medium">Desv. Est. (<span class="math-symbol">s</span>)</span>
+                <span id="sc-stat-std" class="text-base font-extrabold text-amber-400">7.20 g</span>
+              </div>
+              <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                <span class="text-[11px] text-slate-400 block font-medium">Moda (<span class="math-symbol">Mo</span>)</span>
+                <span id="sc-stat-mode" class="text-base font-extrabold text-white">496.0 g</span>
+              </div>
+              <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                <span class="text-[11px] text-slate-400 block font-medium">Fuera de Norma</span>
+                <span id="sc-stat-out" class="text-base font-extrabold text-rose-400">18 / 50</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scenario Story Card -->
+          <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-xl flex items-start gap-3">
+            <i data-lucide="file-text" class="w-5 h-5 text-sky-400 shrink-0 mt-0.5"></i>
+            <div class="space-y-1">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Contexto del Lote y Reporte de Planta</h4>
+              <p id="sc-narrative" class="text-xs text-slate-300 leading-relaxed">
+                El supervisor de turno te informa satisfecho: <em>"¡Jefe, el promedio del lote dio exactamente 500.1 gramos, estamos clavados en la meta!"</em>. Sin embargo, al auditar el lote hay 18 piezas botadas fuera del rango contractual (9 bajo peso y 9 con sobrepeso).
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right 1 Col: Financial Risk Assessment & Decision Panel -->
+        <div class="space-y-6">
+          <!-- Cost Impact Card -->
+          <div class="bg-executive-card border border-executive-border rounded-2xl p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-executive-border pb-3">
+              <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                <i data-lucide="dollar-sign" class="w-4 h-4 text-emerald-400"></i> Estado de Riesgo Financiero
+              </h3>
+              <span class="text-[11px] text-slate-400 font-mono">Por lote (50 pzas)</span>
+            </div>
+
+            <div class="space-y-3">
+              <div class="flex items-center justify-between text-xs p-2.5 rounded-lg bg-slate-900/60 border border-slate-800">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                  <span class="text-slate-300">Riesgo Legal (&lt; 495 g):</span>
+                </div>
+                <span id="sc-cost-under" class="font-bold text-rose-400">-$450 USD (9 pzas)</span>
+              </div>
+
+              <div class="flex items-center justify-between text-xs p-2.5 rounded-lg bg-slate-900/60 border border-slate-800">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                  <span class="text-slate-300">Merma Regalo (&gt; 505 g):</span>
+                </div>
+                <span id="sc-cost-over" class="font-bold text-amber-400">-$216 USD</span>
+              </div>
+
+              <div class="flex items-center justify-between text-xs p-2.5 rounded-lg bg-slate-900/60 border border-slate-800">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                  <span class="text-slate-300">Costo Inspección/Retrabajo:</span>
+                </div>
+                <span id="sc-cost-rework" class="font-bold text-indigo-400">-$270 USD</span>
+              </div>
+
+              <div class="pt-2 border-t border-executive-border flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-200">Impacto Total de No-Calidad:</span>
+                <span id="sc-cost-total" class="text-base font-extrabold text-rose-400">-$936 USD</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- EXECUTIVE DECISION BUTTONS -->
+          <div class="bg-executive-card border border-executive-border rounded-2xl p-5 space-y-3">
+            <h3 class="font-bold text-white text-xs uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
+              <i data-lucide="crosshair" class="w-4 h-4"></i> ¿Qué decisión ejecutiva tomas?
+            </h3>
+            <p class="text-xs text-slate-400">Selecciona tu dictamen gerencial para este lote:</p>
+
+            <div class="space-y-2 pt-1" id="decisionButtonContainer">
+              <button onclick="submitDecision('release')" class="w-full text-left p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 hover:border-sky-500 text-xs text-slate-200 font-semibold transition flex items-center justify-between group">
+                <span>1. Liberar lote directo al cliente</span>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400 group-hover:text-sky-400 transition"></i>
+              </button>
+
+              <button onclick="submitDecision('recalibrate')" class="w-full text-left p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 hover:border-sky-500 text-xs text-slate-200 font-semibold transition flex items-center justify-between group">
+                <span>2. Re-tarar dosificador (-X gramos)</span>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400 group-hover:text-sky-400 transition"></i>
+              </button>
+
+              <button onclick="submitDecision('maintenance')" class="w-full text-left p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 hover:border-sky-500 text-xs text-slate-200 font-semibold transition flex items-center justify-between group">
+                <span>3. Paro técnico: Mantenimiento por alta dispersión (<span class="math-symbol">s</span>)</span>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400 group-hover:text-sky-400 transition"></i>
+              </button>
+
+              <button onclick="submitDecision('outlier')" class="w-full text-left p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 hover:border-sky-500 text-xs text-slate-200 font-semibold transition flex items-center justify-between group">
+                <span>4. Aislar outlier único y liberar lote limpio</span>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400 group-hover:text-sky-400 transition"></i>
+              </button>
+
+              <button onclick="submitDecision('stratify')" class="w-full text-left p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 hover:border-sky-500 text-xs text-slate-200 font-semibold transition flex items-center justify-between group">
+                <span>5. Estratificar turnos/moldes (Investigar bimodales)</span>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400 group-hover:text-sky-400 transition"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EXECUTIVE AUDIT FEEDBACK CARD (APARECE TRAS DECIDIR) -->
+      <div id="decisionFeedbackCard" class="hidden p-5 rounded-2xl border transition duration-300">
+        <div class="flex items-start gap-4">
+          <div id="feedbackIconWrap" class="p-3 rounded-xl shrink-0 mt-1">
+            <i id="feedbackIcon" data-lucide="check-circle" class="w-6 h-6"></i>
+          </div>
+          <div class="space-y-2 flex-1">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h4 id="feedbackTitle" class="text-base font-bold">¡Excelente diagnóstico de Ingeniería!</h4>
+              <span id="feedbackBadge" class="text-xs font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">Aprobado</span>
+            </div>
+            <p id="feedbackText" class="text-xs sm:text-sm text-slate-200 leading-relaxed">
+              Explicación detallada de la decisión.
+            </p>
+            <div id="feedbackFinancialImpact" class="text-xs font-semibold p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 inline-block text-slate-300">
+              Impacto en Utilidad Bruta: <span class="text-emerald-400">+$12,400 USD anuales preservados</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- MODO 3: DUELO DE PROVEEDORES (COMPRAS ESTRATÉGICAS Y TCO)     -->
+    <!-- ============================================================= -->
+    <div id="mode-3" class="hidden space-y-6">
+      <div class="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-sky-950/30 border border-emerald-800/40 p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold uppercase">
+            <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i> Decisión Estratégica de Compras (TCO)
+          </div>
+          <h2 class="text-lg sm:text-xl font-bold text-white">¿A cuál proveedor debes adjudicar el contrato?</h2>
+          <p class="text-xs sm:text-sm text-slate-300 max-w-3xl">
+            Ambos proveedores cotizan componentes de 500 gramos. El <strong>Proveedor Beta</strong> ofrece un precio de catálogo <strong>8% más económico</strong> y su promedio es "más exacto" (500.00 g vs 500.20 g). ¿Es realmente el más rentable? Demuestra el valor de la <strong>desviación estándar</strong>.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-400 font-medium">Volumen anual:</span>
+          <select id="annualVolumeSelect" onchange="updateSupplierDuel()" class="bg-slate-800 border border-slate-700 text-xs text-white rounded-lg px-2.5 py-1.5 font-bold focus:outline-none focus:border-sky-500">
+            <option value="10000">10,000 pzas / año</option>
+            <option value="50000" selected>50,000 pzas / año</option>
+            <option value="100000">100,000 pzas / año</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- DUAL SUPPLIER COMPARISON CARDS -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- PROVEEDOR A (ALPHA) -->
+        <div class="bg-executive-card border-2 border-emerald-500/40 rounded-2xl p-5 space-y-4 relative overflow-hidden">
+          <div class="flex items-center justify-between border-b border-executive-border pb-3">
+            <div>
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800 uppercase tracking-wide">Proveedor Alpha</span>
+              <h3 class="text-base font-bold text-white mt-1">Proceso Robusto de Alta Precisión</h3>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-400">Precio Factura:</span>
+              <div class="text-xl font-extrabold text-white">$10.00 <span class="text-xs font-normal text-slate-400">USD/pza</span></div>
+            </div>
+          </div>
+
+          <!-- Chart Alpha -->
+          <div class="h-44 w-full">
+            <canvas id="chartSupplierA"></canvas>
+          </div>
+
+          <!-- KPI Alpha -->
+          <div class="grid grid-cols-4 gap-2 text-center text-xs">
+            <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+              <span class="text-slate-400 block text-[10px]">Promedio (<span class="math-symbol">x̄</span>)</span>
+              <span class="font-extrabold text-white text-sm">500.20 g</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+              <span class="text-slate-400 block text-[10px]">Mediana (<span class="math-symbol">Me</span>)</span>
+              <span class="font-extrabold text-white text-sm">500.20 g</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+              <span class="text-slate-400 block text-[10px]">Desv. Est. (<span class="math-symbol">s</span>)</span>
+              <span class="font-extrabold text-emerald-400 text-sm">1.15 g</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+              <span class="text-slate-400 block text-[10px]">Defectos</span>
+              <span class="font-extrabold text-emerald-400 text-sm">0.0%</span>
+            </div>
+          </div>
+
+          <!-- TCO Breakdown A -->
+          <div class="space-y-2 pt-2 border-t border-executive-border text-xs">
+            <div class="flex justify-between text-slate-300">
+              <span>Costo Factura Inicial:</span>
+              <span id="tco-buy-a" class="font-mono font-semibold">$500,000 USD</span>
+            </div>
+            <div class="flex justify-between text-slate-300">
+              <span>Costo No-Calidad (Scrap + Paros):</span>
+              <span id="tco-scrap-a" class="font-mono font-semibold text-emerald-400">$0 USD</span>
+            </div>
+            <div class="flex justify-between text-white font-bold pt-1 border-t border-slate-800 text-sm">
+              <span>Costo Total Real (TCO):</span>
+              <span id="tco-total-a" class="font-mono text-emerald-400">$500,000 USD</span>
+            </div>
+            <div class="text-[11px] text-slate-400 italic text-right">
+              Costo Efectivo Real: <span id="tco-unit-a" class="font-bold text-white">$10.00</span> / pza utilizable
+            </div>
+          </div>
+
+          <button onclick="chooseSupplier('A')" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-900/30">
+            <i data-lucide="check-check" class="w-4 h-4"></i> Adjudicar Contrato a Proveedor Alpha
+          </button>
+        </div>
+
+        <!-- PROVEEDOR B (BETA) -->
+        <div class="bg-executive-card border-2 border-amber-500/40 rounded-2xl p-5 space-y-4 relative overflow-hidden">
+          <div class="flex items-center justify-between border-b border-executive-border pb-3">
+            <div>
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-950 text-amber-300 border border-amber-800 uppercase tracking-wide">Proveedor Beta (El Barato)</span>
+              <h3 class="text-base font-bold text-white mt-1">Proceso Bimodal Descontrolado</h3>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-400">Precio Factura:</span>
+              <div class="text-xl font-extrabold text-amber-400">$9.20 <span class="text-xs font-normal text-slate-400">USD/pza (-8%)</span></div>
+            </div>
+          </div>
+
+          <!-- Chart Beta -->
+          <div class="h-44 w-full">
+            <canvas id="chartSupplierB"></canvas>
+          </div>
+
+          <!-- KPI Beta -->
+          <div class="grid grid-cols-4 gap-2 text-center text-xs">
+            <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+              <span class="text-slate-400 block text-[10px]">Promedio (<span class="math-symbol">x̄</span>)</span>
+              <span class="font-extrabold text-white text-sm">500.00 g</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+              <span class="text-slate-400 block text-[10px]">Mediana (<span class="math-symbol">Me</span>)</span>
+              <span class="font-extrabold text-white text-sm">500.00 g</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+              <span class="text-slate-400 block text-[10px]">Desv. Est. (<span class="math-symbol">s</span>)</span>
+              <span class="font-extrabold text-rose-400 text-sm">6.65 g</span>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+              <span class="text-slate-400 block text-[10px]">Defectos</span>
+              <span class="font-extrabold text-rose-400 text-sm">26.0%</span>
+            </div>
+          </div>
+
+          <!-- TCO Breakdown B -->
+          <div class="space-y-2 pt-2 border-t border-executive-border text-xs">
+            <div class="flex justify-between text-slate-300">
+              <span>Costo Factura Inicial:</span>
+              <span id="tco-buy-b" class="font-mono font-semibold">$460,000 USD</span>
+            </div>
+            <div class="flex justify-between text-slate-300">
+              <span>Costo No-Calidad (Scrap + Paros):</span>
+              <span id="tco-scrap-b" class="font-mono font-semibold text-rose-400">+$138,000 USD</span>
+            </div>
+            <div class="flex justify-between text-white font-bold pt-1 border-t border-slate-800 text-sm">
+              <span>Costo Total Real (TCO):</span>
+              <span id="tco-total-b" class="font-mono text-rose-400">$598,000 USD</span>
+            </div>
+            <div class="text-[11px] text-slate-400 italic text-right">
+              Costo Efectivo Real: <span id="tco-unit-b" class="font-bold text-rose-400">$16.16</span> / pza utilizable
+            </div>
+          </div>
+
+          <button onclick="chooseSupplier('B')" class="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-amber-900/30">
+            <i data-lucide="alert-circle" class="w-4 h-4"></i> Adjudicar Contrato a Proveedor Beta
+          </button>
+        </div>
+      </div>
+
+      <!-- EXECUTIVE PROCUREMENT RESULT MODAL/CARD -->
+      <div id="supplierResultBox" class="hidden p-5 rounded-2xl bg-slate-900 border border-slate-800 transition">
+        <div class="flex items-start gap-4">
+          <div id="supplierResultIconWrap" class="p-3 rounded-xl shrink-0 mt-1">
+            <i id="supplierResultIcon" data-lucide="award" class="w-6 h-6"></i>
+          </div>
+          <div class="space-y-2 flex-1">
+            <h4 id="supplierResultTitle" class="text-base font-bold text-white">Dictamen de Compras Estratégicas</h4>
+            <p id="supplierResultText" class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Explicación del costo oculto de la variabilidad.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL: GUÍA DE PARÁMETROS CENTRALES Y DISPERSIÓN PARA IGE -->
+  <div id="guideModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-executive-card border border-executive-border w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="p-5 border-b border-executive-border flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center">
+            <i data-lucide="book-open" class="w-4 h-4"></i>
+          </div>
+          <h3 class="font-bold text-white text-base">Criterio Ejecutivo: Estadística Central y Dispersión</h3>
+        </div>
+        <button onclick="closeGuideModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
+        <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+          <div class="font-bold text-sky-400 flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span> Promedio o Media (<span class="math-symbol">x̄</span>)
+          </div>
+          <p class="text-slate-300">
+            Es el centro de gravedad físico. Si sumas todas las piezas y las divides entre 50, obtienes este número. <strong>Peligro Gerencial:</strong> Es sumamente sensible a piezas atípicas (outliers). Una sola rebaba de 600 g moverá el promedio y te hará creer falsamente que toda la máquina está descalibrada.
+          </p>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+          <div class="font-bold text-purple-400 flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span> Mediana (<span class="math-symbol">Me</span>)
+          </div>
+          <p class="text-slate-300">
+            Es el valor de la pieza ubicada exactamente en el centro tras ordenar el lote de menor a mayor (la pieza central #25). <strong>Criterio IGE:</strong> Es inmune a los valores extremos. Si el promedio difiere drásticamente de la mediana, tienes un sesgo severo o piezas atípicas aisladas.
+          </p>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+          <div class="font-bold text-emerald-400 flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Moda (<span class="math-symbol">Mo</span>)
+          </div>
+          <p class="text-slate-300">
+            El peso que más veces se repite. En gestión de la calidad, una <strong>distribución bimodal</strong> (dos modas) es el síntoma definitivo de que estás mezclando dos orígenes distintos: dos turnos sin estandarizar, dos moldes de inyección con desgastes distintos o dos tolvas de materia prima.
+          </p>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+          <div class="font-bold text-amber-400 flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Desviación Estándar (<span class="math-symbol">s</span>) y Varianza (<span class="math-symbol">s²</span>)
+          </div>
+          <p class="text-slate-300">
+            Mide qué tan alejadas están las piezas del promedio. <strong>El Mandamiento IGE:</strong> "El promedio te dice hacia dónde apuntas; la desviación estándar te dice qué tan bueno eres disparando". Un promedio de 500 g con una desviación alta (s > 5 g) genera pérdidas por multas legales en un extremo y merma regalada en el otro.
+          </p>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-executive-border bg-slate-900/60 flex justify-end">
+        <button onclick="closeGuideModal()" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 font-bold text-white text-xs transition">
+          Entendido, volver al simulador
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING TOAST NOTIFICATION -->
+  <div id="toastNotification" class="fixed bottom-5 right-5 z-50 bg-slate-900 border border-sky-500/50 text-white text-xs px-4 py-3 rounded-xl shadow-2xl hidden flex items-center gap-3 transition-all duration-300">
+    <i data-lucide="info" class="w-4 h-4 text-sky-400"></i>
+    <span id="toastMessage">Acción ejecutada con éxito</span>
+  </div>
+
+  <script>
+    /* ============================================================= */
+    /* AUDIO SYNTHESIZER (Pure Web Audio API, Zero external sounds)  */
+    /* ============================================================= */
+    let audioEnabled = true;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playSound(type) {
+      if (!audioEnabled) return;
+      try {
+        initAudio();
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const now = audioCtx.currentTime;
+
+        if (type === 'click') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.linearRampToValueAtTime(0.001, now + 0.05);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        } else if (type === 'success') {
+          // Executive pleasant major chord
+          [523.25, 659.25, 783.99].forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+            gain.gain.setValueAtTime(0.07, now + idx * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.35);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.06);
+            osc.stop(now + idx * 0.06 + 0.35);
+          });
+        } else if (type === 'warning') {
+          [400, 310].forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+            gain.gain.setValueAtTime(0.06, now + idx * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.25);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.1);
+            osc.stop(now + idx * 0.1 + 0.25);
+          });
+        }
+      } catch (err) {
+        // Audio error silent fallback
+      }
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      const icon = document.getElementById('audioIcon');
+      const label = document.getElementById('audioLabel');
+      if (audioEnabled) {
+        icon.setAttribute('data-lucide', 'volume-2');
+        icon.className = 'w-4 h-4 text-emerald-400';
+        label.textContent = 'Audio ON';
+        playSound('click');
+      } else {
+        icon.setAttribute('data-lucide', 'volume-x');
+        icon.className = 'w-4 h-4 text-slate-500';
+        label.textContent = 'Audio OFF';
+      }
+      lucide.createIcons();
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotification');
+      document.getElementById('toastMessage').textContent = msg;
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 3500);
+    }
+
+    function openGuideModal() {
+      playSound('click');
+      document.getElementById('guideModal').classList.remove('hidden');
+    }
+
+    function closeGuideModal() {
+      playSound('click');
+      document.getElementById('guideModal').classList.add('hidden');
+    }
+
+    /* ============================================================= */
+    /* MODE TABS SWITCHING                                           */
+    /* ============================================================= */
+    let currentMode = 1;
+
+    function switchMode(modeNum) {
+      currentMode = modeNum;
+      playSound('click');
+
+      for (let i = 1; i <= 3; i++) {
+        const tabBtn = document.getElementById(`tab-btn-${i}`);
+        const view = document.getElementById(`mode-${i}`);
+
+        if (i === modeNum) {
+          tabBtn.className = 'flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-sky-600 text-white shadow-md';
+          view.classList.remove('hidden');
+        } else {
+          tabBtn.className = 'flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-400 hover:text-slate-200 transition';
+          view.classList.add('hidden');
+        }
+      }
+
+      if (modeNum === 1) {
+        requestAnimationFrame(() => renderBeamCanvas());
+      } else if (modeNum === 2) {
+        requestAnimationFrame(() => renderScenarioChart());
+      } else if (modeNum === 3) {
+        requestAnimationFrame(() => updateSupplierDuel());
+      }
+    }
+
+    /* ============================================================= */
+    /* DESCRIPTIVE STATISTICS ENGINE (CALCULADORA MATEMÁTICA)        */
+    /* ============================================================= */
+    function calcStatistics(arr) {
+      const n = arr.length;
+      if (n === 0) return { mean: 0, median: 0, mode: 0, variance: 0, std: 0, min: 0, max: 0, range: 0, underCount: 0, overCount: 0, okCount: 0 };
+
+      // Mean
+      const sum = arr.reduce((acc, v) => acc + v, 0);
+      const mean = sum / n;
+
+      // Median
+      const sorted = [...arr].sort((a, b) => a - b);
+      let median = 0;
+      if (n % 2 === 0) {
+        median = (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
+      } else {
+        median = sorted[Math.floor(n / 2)];
+      }
+
+      // Sample Variance & Standard Deviation (n - 1)
+      const sqDiffs = arr.map(v => Math.pow(v - mean, 2));
+      const variance = n > 1 ? sqDiffs.reduce((a, b) => a + b, 0) / (n - 1) : 0;
+      const std = Math.sqrt(variance);
+
+      // Mode calculation (binned by 0.5g precision for physical pieces)
+      const counts = {};
+      arr.forEach(val => {
+        const rounded = Math.round(val * 2) / 2;
+        counts[rounded] = (counts[rounded] || 0) + 1;
+      });
+      let maxCount = 0;
+      let mode = mean;
+      for (const key in counts) {
+        if (counts[key] > maxCount) {
+          maxCount = counts[key];
+          mode = parseFloat(key);
+        }
+      }
+
+      // Detect bimodal distribution
+      let modeCountThreshold = maxCount * 0.8;
+      let highModes = [];
+      for (const key in counts) {
+        if (counts[key] >= modeCountThreshold) {
+          highModes.push(parseFloat(key));
+        }
+      }
+      const isBimodal = highModes.length >= 2 && Math.abs(highModes[0] - highModes[highModes.length - 1]) >= 4.0;
+
+      // Counts against tolerance [495.0, 505.0]
+      let underCount = 0;
+      let overCount = 0;
+      let okCount = 0;
+
+      arr.forEach(val => {
+        if (val < 495.0) underCount++;
+        else if (val > 505.0) overCount++;
+        else okCount++;
+      });
+
+      return {
+        mean,
+        median,
+        mode,
+        isBimodal,
+        variance,
+        std,
+        min: sorted[0],
+        max: sorted[n - 1],
+        range: sorted[n - 1] - sorted[0],
+        underCount,
+        overCount,
+        okCount,
+        totalDefects: underCount + overCount,
+        defectRate: ((underCount + overCount) / n) * 100
+      };
+    }
+
+    // Gaussian random helper (Box-Muller transform)
+    function randn_bm(mean = 0, stdev = 1) {
+      let u = 1 - Math.random();
+      let v = Math.random();
+      let z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+      return z * stdev + mean;
+    }
+
+    /* ============================================================= */
+    /* MODO 1: CANVAS DEL BALANCÍN INTERACTIVO                      */
+    /* ============================================================= */
+    const beamCanvas = document.getElementById('beamCanvas');
+    const ctx = beamCanvas.getContext('2d');
+    const canvasTooltip = document.getElementById('canvasTooltip');
+
+    // Scale range for the physical beam: 470g to 530g
+    const MIN_BEAM_G = 470;
+    const MAX_BEAM_G = 530;
+    const NOMINAL_G = 500;
+    const TOL_MIN = 495;
+    const TOL_MAX = 505;
+    const PIECE_COUNT = 50;
+
+    let beamPieces = [];
+    let draggedPieceIndex = -1;
+
+    function initBeamData(type = 'normal') {
+      beamPieces = [];
+      if (type === 'normal') {
+        for (let i = 0; i < PIECE_COUNT; i++) {
+          let val = randn_bm(500.0, 1.25);
+          val = Math.max(496.0, Math.min(504.0, val));
+          beamPieces.push(Math.round(val * 10) / 10);
+        }
+      } else if (type === 'outlier') {
+        // 49 normal pieces centered around 500g, 1 massive outlier at 528g
+        for (let i = 0; i < PIECE_COUNT - 1; i++) {
+          let val = randn_bm(500.0, 0.9);
+          beamPieces.push(Math.round(val * 10) / 10);
+        }
+        beamPieces.push(528.0); // Extreme piece
+      } else if (type === 'bimodal') {
+        // 25 pieces from Shift 1 (~493g) and 25 pieces from Shift 2 (~507g)
+        for (let i = 0; i < 25; i++) {
+          beamPieces.push(Math.round(randn_bm(493.5, 0.8) * 10) / 10);
+        }
+        for (let i = 0; i < 25; i++) {
+          beamPieces.push(Math.round(randn_bm(506.5, 0.8) * 10) / 10);
+        }
+      }
+      updateBeamMetrics();
+      renderBeamCanvas();
+    }
+
+    function applyBeamPreset(preset) {
+      playSound('click');
+      initBeamData(preset);
+      showToast(`Preset aplicado: ${preset === 'outlier' ? 'Pieza con rebaba extrema' : preset === 'bimodal' ? 'Dos turnos mezclados' : 'Lote controlado'}`);
+    }
+
+    function resetBeamData() {
+      playSound('click');
+      initBeamData('normal');
+      showToast('Nuevas 50 mediciones generadas');
+    }
+
+    // Convert gram weight to Canvas X coordinate
+    function gramToX(gram, width) {
+      const margin = 50;
+      const usableWidth = width - margin * 2;
+      const ratio = (gram - MIN_BEAM_G) / (MAX_BEAM_G - MIN_BEAM_G);
+      return margin + ratio * usableWidth;
+    }
+
+    function xToGram(x, width) {
+      const margin = 50;
+      const usableWidth = width - margin * 2;
+      const ratio = Math.max(0, Math.min(1, (x - margin) / usableWidth));
+      return MIN_BEAM_G + ratio * (MAX_BEAM_G - MIN_BEAM_G);
+    }
+
+    function updateBeamMetrics() {
+      const stats = calcStatistics(beamPieces);
+
+      document.getElementById('m1-mean').innerHTML = `${stats.mean.toFixed(2)} <span class="text-xs font-normal text-slate-400">g</span>`;
+      document.getElementById('m1-median').innerHTML = `${stats.median.toFixed(2)} <span class="text-xs font-normal text-slate-400">g</span>`;
+      document.getElementById('m1-mode').innerHTML = `${stats.mode.toFixed(1)} <span class="text-xs font-normal text-slate-400">g</span>`;
+      document.getElementById('m1-std').innerHTML = `${stats.std.toFixed(2)} <span class="text-xs font-normal text-slate-400">g</span>`;
+      document.getElementById('m1-var').innerHTML = `${stats.variance.toFixed(2)} <span class="text-xs font-normal text-slate-400">g²</span>`;
+      document.getElementById('m1-defects').innerHTML = `${stats.totalDefects} <span class="text-xs font-normal text-slate-400">piezas</span>`;
+      document.getElementById('m1-defect-rate').textContent = `${stats.defectRate.toFixed(1)}% rechazo`;
+
+      // Status labels for Mean
+      const meanStatus = document.getElementById('m1-mean-status');
+      const meanDiff = Math.abs(stats.mean - 500);
+      if (meanDiff < 0.3) {
+        meanStatus.textContent = 'En objetivo (500g)';
+        meanStatus.className = 'text-[11px] text-sky-400 font-semibold mt-0.5';
+      } else if (stats.mean > 500) {
+        meanStatus.textContent = `Descentrado +${(stats.mean - 500).toFixed(2)}g`;
+        meanStatus.className = 'text-[11px] text-amber-400 font-semibold mt-0.5';
+      } else {
+        meanStatus.textContent = `Descentrado ${(stats.mean - 500).toFixed(2)}g`;
+        meanStatus.className = 'text-[11px] text-rose-400 font-semibold mt-0.5';
+      }
+
+      // Mode type update
+      const modeType = document.getElementById('m1-mode-type');
+      if (stats.isBimodal) {
+        modeType.textContent = 'Bimodal (Alerta)';
+        modeType.className = 'text-[11px] text-amber-400 font-semibold mt-0.5';
+      } else {
+        modeType.textContent = 'Unimodal';
+        modeType.className = 'text-[11px] text-emerald-400 font-semibold mt-0.5';
+      }
+
+      // CRITICAL FIX: Update Standard Deviation Label dynamically
+      const stdLabel = document.getElementById('m1-std-label');
+      if (stats.std < 1.8) {
+        stdLabel.textContent = 'Dispersión Óptima (Baja)';
+        stdLabel.className = 'text-[11px] text-emerald-400 font-semibold mt-0.5';
+      } else if (stats.std <= 3.2) {
+        stdLabel.textContent = 'Dispersión Moderada';
+        stdLabel.className = 'text-[11px] text-amber-400 font-semibold mt-0.5';
+      } else {
+        stdLabel.textContent = 'Dispersión Crítica (Alta)';
+        stdLabel.className = 'text-[11px] text-rose-400 font-semibold mt-0.5';
+      }
+
+      // Executive Insight dynamic narrative (Clean without raw LaTeX signs)
+      const insightText = document.getElementById('m1-insight-text');
+      const meanMedDiff = Math.abs(stats.mean - stats.median);
+
+      if (meanMedDiff > 1.2) {
+        insightText.innerHTML = `
+          <strong>¡Alerta de Asimetría!</strong> El Promedio (${stats.mean.toFixed(2)}g) está fuertemente distorsionado con respecto a la Mediana (${stats.median.toFixed(2)}g). Hay piezas extremas (outliers) jalando la media como un imán. <em>Decisión IGE recomendada:</em> No alteres la calibración del dosificador; inspecciona si hay rebabas o defectos transitorios antes de modificar el offset.
+        `;
+      } else if (stats.std > 3.5) {
+        insightText.innerHTML = `
+          <strong>¡Peligro de Dispersión Alta!</strong> Aunque el promedio esté cerca de 500g (${stats.mean.toFixed(2)}g), la desviación estándar es crítica (s = ${stats.std.toFixed(2)} g). Tienes ${stats.totalDefects} piezas fuera de tolerancia. <em>Decisión IGE recomendada:</em> Este no es un problema de centrado; es holgura mecánica, desgaste o mezcla de lotes.
+        `;
+      } else if (stats.mean > 504.0) {
+        insightText.innerHTML = `
+          <strong>¡Merma de Materia Prima (Giveaway)!</strong> El proceso tiene buena repetibilidad (s = ${stats.std.toFixed(2)} g), pero está calibrado hacia arriba (${stats.mean.toFixed(2)}g). Ningún cliente se quejará de recibir más producto, pero tu empresa está <strong>regalando dinero</strong> en cada turno. <em>Decisión IGE recomendada:</em> Ajustar el tarado de la báscula en -${(stats.mean - 500).toFixed(1)}g inmediatamente.
+        `;
+      } else {
+        insightText.innerHTML = `
+          <strong>Proceso en Control Estadístico:</strong> Promedio (${stats.mean.toFixed(2)}g) y Mediana (${stats.median.toFixed(2)}g) perfectamente alineados. La dispersión (s = ${stats.std.toFixed(2)} g) garantiza que el lote cumple con el contrato de 495g a 505g. Máxima rentabilidad y cero multas.
+        `;
+      }
+    }
+
+    // Render loop for the Balance Beam Canvas
+    function renderBeamCanvas() {
+      if (!beamCanvas) return;
+      const rect = beamCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      
+      beamCanvas.width = rect.width * dpr;
+      beamCanvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const w = rect.width;
+      const h = rect.height;
+
+      // Clear canvas
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, w, h);
+
+      const stats = calcStatistics(beamPieces);
+      const beamY = h - 75; // Baseline y for the beam bar
+
+      // 1. Draw Tolerance Zone Background (495g to 505g)
+      const tolX1 = gramToX(TOL_MIN, w);
+      const tolX2 = gramToX(TOL_MAX, w);
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
+      ctx.fillRect(tolX1, 20, tolX2 - tolX1, beamY - 20);
+      
+      // Dashed border for tolerance limits
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(tolX1, 20);
+      ctx.lineTo(tolX1, beamY);
+      ctx.moveTo(tolX2, 20);
+      ctx.lineTo(tolX2, beamY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Label for Tolerance
+      ctx.fillStyle = '#10b981';
+      ctx.font = '10px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('LSL: 495g', tolX1, 15);
+      ctx.fillText('USL: 505g', tolX2, 15);
+      ctx.fillText('TOLERANCIA PERMITIDA (500 ± 5g)', (tolX1 + tolX2) / 2, 35);
+
+      // 2. Draw Target Center Line (500g)
+      const nomX = gramToX(NOMINAL_G, w);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(nomX, 45);
+      ctx.lineTo(nomX, beamY + 15);
+      ctx.stroke();
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('OBJETIVO: 500g', nomX, 55);
+
+      // 3. Draw The Physical Balance Beam (Horizontal steel bar)
+      const margin = 35;
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(margin, beamY, w - margin * 2, 10, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      // Tick marks along the beam
+      ctx.fillStyle = '#64748b';
+      ctx.font = '9px monospace';
+      for (let g = 470; g <= 530; g += 5) {
+        const gx = gramToX(g, w);
+        ctx.beginPath();
+        ctx.moveTo(gx, beamY + 10);
+        ctx.lineTo(gx, beamY + (g % 10 === 0 ? 18 : 14));
+        ctx.strokeStyle = g % 10 === 0 ? '#94a3b8' : '#475569';
+        ctx.stroke();
+        if (g % 10 === 0) {
+          ctx.fillText(`${g}g`, gx, beamY + 28);
+        }
+      }
+
+      // 4. Draw Fulcrum (Promedio / Center of Gravity Support)
+      const fulcrumX = gramToX(stats.mean, w);
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.moveTo(fulcrumX, beamY + 10);
+      ctx.lineTo(fulcrumX - 14, beamY + 38);
+      ctx.lineTo(fulcrumX + 14, beamY + 38);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Fulcrum text: Clean typography without raw backslashes
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 10px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`PROMEDIO (x̄ = ${stats.mean.toFixed(1)}g)`, fulcrumX, beamY + 52);
+
+      // 5. Calculate Piece Stacking & Find Highest Stack
+      const bins = {};
+      const binSize = 1.0; // 1g buckets
+      const piecePositions = [];
+      let maxStackInCanvas = 0;
+
+      beamPieces.forEach((val, idx) => {
+        const binKey = Math.round(val / binSize) * binSize;
+        bins[binKey] = (bins[binKey] || 0) + 1;
+        if (bins[binKey] > maxStackInCanvas) {
+          maxStackInCanvas = bins[binKey];
+        }
+
+        const stackHeight = bins[binKey];
+        const px = gramToX(val, w);
+        const radius = 6.5;
+        const py = beamY - (stackHeight * (radius * 2 + 1)) + radius;
+
+        piecePositions.push({ x: px, y: py, radius, gram: val, index: idx });
+      });
+
+      // 6. Draw Median Flag Indicator Safely Above Stack (Fix clipping & overlap)
+      const medianX = gramToX(stats.median, w);
+      const topStackY = Math.max(30, beamY - (maxStackInCanvas * 14) - 26);
+      
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(medianX, beamY);
+      ctx.lineTo(medianX, topStackY + 18);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Median flag banner with dynamic width to prevent any text clipping
+      const medianText = `MEDIANA (Me): ${stats.median.toFixed(1)}g`;
+      ctx.font = 'bold 9px "Plus Jakarta Sans", sans-serif';
+      const textMetrics = ctx.measureText(medianText);
+      const bannerW = Math.max(118, textMetrics.width + 16);
+      const bannerH = 18;
+
+      ctx.fillStyle = '#9333ea';
+      ctx.beginPath();
+      ctx.roundRect(medianX - bannerW / 2, topStackY, bannerW, bannerH, 4);
+      ctx.fill();
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.fillText(medianText, medianX, topStackY + 12);
+
+      // 7. Render 50 piece tokens
+      piecePositions.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+
+        // Color piece according to tolerance
+        if (p.gram < TOL_MIN) {
+          ctx.fillStyle = '#f43f5e'; // Underfilled red
+          ctx.strokeStyle = '#881337';
+        } else if (p.gram > TOL_MAX) {
+          ctx.fillStyle = '#f59e0b'; // Overfilled amber
+          ctx.strokeStyle = '#78350f';
+        } else {
+          ctx.fillStyle = '#38bdf8'; // Good piece cyan
+          ctx.strokeStyle = '#0369a1';
+        }
+
+        ctx.lineWidth = 1.5;
+        ctx.fill();
+        ctx.stroke();
+
+        // Highlight dragged piece
+        if (draggedPieceIndex === p.index) {
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+        }
+      });
+
+      // Save piecePositions for mouse interaction
+      beamCanvas._piecePositions = piecePositions;
+    }
+
+    function getCanvasCoords(evt) {
+      const rect = beamCanvas.getBoundingClientRect();
+      const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+      const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top,
+        rawX: clientX,
+        rawY: clientY
+      };
+    }
+
+    function onPointerDown(evt) {
+      const coords = getCanvasCoords(evt);
+      const positions = beamCanvas._piecePositions || [];
+      draggedPieceIndex = -1;
+
+      for (let i = positions.length - 1; i >= 0; i--) {
+        const p = positions[i];
+        const dist = Math.hypot(coords.x - p.x, coords.y - p.y);
+        if (dist <= p.radius + 6) {
+          draggedPieceIndex = p.index;
+          playSound('click');
+          break;
+        }
+      }
+    }
+
+    function onPointerMove(evt) {
+      const coords = getCanvasCoords(evt);
+      const positions = beamCanvas._piecePositions || [];
+
+      if (draggedPieceIndex >= 0) {
+        // Dragging active: update piece weight
+        const newGram = Math.round(xToGram(coords.x, beamCanvas.clientWidth) * 10) / 10;
+        beamPieces[draggedPieceIndex] = Math.max(MIN_BEAM_G, Math.min(MAX_BEAM_G, newGram));
+        updateBeamMetrics();
+        renderBeamCanvas();
+
+        // Show live tooltip
+        canvasTooltip.style.left = `${coords.rawX + 12}px`;
+        canvasTooltip.style.top = `${coords.rawY - 25}px`;
+        canvasTooltip.textContent = `Pieza #${draggedPieceIndex + 1}: ${beamPieces[draggedPieceIndex].toFixed(1)}g`;
+        canvasTooltip.classList.remove('hidden');
+      } else {
+        // Hover inspection
+        let hovered = false;
+        for (let i = positions.length - 1; i >= 0; i--) {
+          const p = positions[i];
+          const dist = Math.hypot(coords.x - p.x, coords.y - p.y);
+          if (dist <= p.radius + 4) {
+            hovered = true;
+            canvasTooltip.style.left = `${coords.rawX + 12}px`;
+            canvasTooltip.style.top = `${coords.rawY - 25}px`;
+            canvasTooltip.textContent = `Pieza #${p.index + 1}: ${p.gram.toFixed(1)}g ${p.gram < 495 ? '(BAJO PESO)' : p.gram > 505 ? '(SOBREPESO)' : '(CONFORME)'}`;
+            canvasTooltip.classList.remove('hidden');
+            break;
+          }
+        }
+        if (!hovered) {
+          canvasTooltip.classList.add('hidden');
+        }
+      }
+    }
+
+    function onPointerUp() {
+      if (draggedPieceIndex >= 0) {
+        draggedPieceIndex = -1;
+        canvasTooltip.classList.add('hidden');
+        renderBeamCanvas();
+      }
+    }
+
+    beamCanvas.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+
+    beamCanvas.addEventListener('touchstart', onPointerDown, { passive: true });
+    window.addEventListener('touchmove', onPointerMove, { passive: true });
+    window.addEventListener('touchend', onPointerUp);
+
+    window.addEventListener('resize', () => {
+      if (currentMode === 1) renderBeamCanvas();
+    });
+
+    /* ============================================================= */
+    /* MODO 2: DIRECTOR DE OPERACIONES - CALIBRACIÓN EXACTA DE DATOS */
+    /* ============================================================= */
+    // Deterministic pre-calibrated 50-piece datasets so the story, math, and chart match 100%
+    const SCENARIOS = [
+      {
+        id: 1,
+        name: "El Espejismo del Promedio",
+        badge: "CASO 1",
+        brief: "Promedio = 500.10 g | s = 7.20 g (Dispersión Severa)",
+        narrative: "El supervisor de turno te informa satisfecho: '¡Jefe, el promedio del lote dio exactamente 500.1 gramos, estamos clavados en la meta!'. Sin embargo, al auditar el lote hay 18 piezas botadas fuera del rango contractual (9 bajo peso y 9 con sobrepeso).",
+        // Exact calibrated dataset: Mean = 500.10g, s = 7.20g, exactly 18 defects (9 under, 9 over, 32 ok)
+        data: [
+          // 9 Underfilled pieces (<495g)
+          484.0, 486.0, 487.5, 489.0, 490.5, 492.0, 493.0, 494.0, 494.5,
+          // 32 In-spec pieces (495g to 505g)
+          495.5, 496.0, 496.0, 496.5, 497.0, 497.5, 498.0, 498.5, 499.0, 499.0,
+          499.5, 500.0, 500.0, 500.0, 500.0, 500.1, 500.2, 500.5, 500.5, 501.0,
+          501.0, 501.5, 502.0, 502.5, 503.0, 503.0, 503.5, 504.0, 504.0, 504.5, 504.5, 504.8,
+          // 9 Overfilled pieces (>505g)
+          505.5, 506.5, 507.5, 509.0, 510.5, 512.0, 513.5, 515.0, 517.0
+        ],
+        costUnderFixed: 450, // 9 pzas * $50 penalty
+        costOverFixed: 216,  // Overweight giveaway
+        costReworkFixed: 270, // 18 pzas * $15 inspection
+        correctDecision: 'maintenance',
+        explanationCorrect: "¡Decisión de Director General! El promedio en 500.10g era un espejismo. La desviación estándar (s = 7.20 g) demuestra que la máquina tiene holgura mecánica o desajuste severo. Re-calibrar el cero no sirve de nada; se requiere paro técnico y mantenimiento correctivo.",
+        explanationWrong: "Error de Gestión: Miraste únicamente el promedio (500.10g) y pasaste por alto la desviación estándar (s = 7.20 g). El proceso está centrado, pero es totalmente impreciso. Liberar este lote o mover el offset arruina la operación.",
+        financialImpactPositive: "+$28,500 USD anuales al evitar reclamos y multas de clientes por lotes no conformes.",
+        financialImpactNegative: "-$8,400 USD en penalizaciones de cliente y devolución total del embarque."
+      },
+      {
+        id: 2,
+        name: "La Rebaba Solitaria (Outlier Aislado)",
+        badge: "CASO 2",
+        brief: "Promedio = 502.80 g | Mediana = 500.00 g | Outlier Único",
+        narrative: "El promedio subió a 502.80 g y el operador quiere descalibrar el dosificador restándole 3 gramos. Pero al mirar la mediana, notas que está clavada en 500.00 g. Solo hay una pieza defectuosa con una rebaba gigante de 640 g.",
+        // Calibrated: 49 pieces centered on 500.0g (sum=24500) + 1 piece of 640g -> Total sum=25140 / 50 = 502.80g!
+        data: [
+          498.2, 498.5, 498.8, 499.0, 499.1, 499.2, 499.3, 499.4, 499.5, 499.6,
+          499.7, 499.8, 499.8, 499.9, 499.9, 500.0, 500.0, 500.0, 500.0, 500.0,
+          500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.0, 500.1, 500.1, 500.1,
+          500.2, 500.2, 500.2, 500.3, 500.3, 500.4, 500.4, 500.5, 500.5, 500.6,
+          500.7, 500.7, 500.8, 500.9, 501.0, 501.1, 501.2, 501.4, 501.6, 640.0
+        ],
+        costUnderFixed: 0,
+        costOverFixed: 210, // 1 outlier giveaway
+        costReworkFixed: 15,
+        correctDecision: 'outlier',
+        explanationCorrect: "¡Excelente ojo clínico! Notaste la discrepancia entre el promedio (502.80g) y la mediana (500.00g). Una sola pieza atípica jaló la media hacia arriba. Aislar esa pieza y liberar las otras 49 salva la producción sin descalibrar una máquina que funciona a la perfección.",
+        explanationWrong: "Decisión errónea. Si hubieras descalibrado la máquina moviendo el offset hacia abajo, habrías mandado las 49 piezas buenas al rango de bajo peso (<495g), destruyendo la siguiente corrida completa.",
+        financialImpactPositive: "+$6,200 USD preservados evitando horas muertas de calibración innecesaria.",
+        financialImpactNegative: "-$4,100 USD perdidos por descalibrar una línea que operaba en tolerancia."
+      },
+      {
+        id: 3,
+        name: "Regalando las Ganancias (Giveaway)",
+        badge: "CASO 3",
+        brief: "Promedio = 504.20 g | s = 0.85 g | Cero Rechazos en Cliente",
+        narrative: "Calidad está feliz: cero piezas rechazadas por los clientes (<495g). Pero Finanzas nota que el margen de utilidad cayó. El promedio es 504.20 g con varianza mínima. El cliente recibe producto excedente que nadie le cobró.",
+        // Calibrated: 50 pieces tightly centered at 504.20g, s = 0.85g
+        data: [
+          502.6, 502.8, 503.0, 503.1, 503.2, 503.3, 503.4, 503.5, 503.6, 503.7,
+          503.7, 503.8, 503.8, 503.9, 503.9, 504.0, 504.0, 504.1, 504.1, 504.1,
+          504.2, 504.2, 504.2, 504.2, 504.2, 504.2, 504.3, 504.3, 504.3, 504.3,
+          504.4, 504.4, 504.5, 504.5, 504.6, 504.6, 504.7, 504.7, 504.8, 504.9,
+          505.0, 505.1, 505.2, 505.3, 505.4, 505.5, 505.6, 505.7, 505.8, 505.9
+        ],
+        costUnderFixed: 0,
+        costOverFixed: 315, // 210g total giveaway * $1.50/g
+        costReworkFixed: 120, // 8 pieces above 505g
+        correctDecision: 'recalibrate',
+        explanationCorrect: "¡Visión Financiera Impecable! El proceso es sumamente preciso (s = 0.85 g), pero está descentrado hacia arriba. Cada gramo por encima de 500g es materia prima regalada (giveaway). Ajustar el offset en -4.20g recupera el margen sin riesgo de caer por debajo de 495g.",
+        explanationWrong: "Error financiero: Aunque el cliente nunca se queje por recibir más producto, estás regalando 4.2 gramos por unidad. A un volumen de 100,000 unidades al año, esto representa miles de dólares en pérdidas directas de materia prima.",
+        financialImpactPositive: "+$32,000 USD anuales en ahorro directo de materia prima recuperada.",
+        financialImpactNegative: "-$25,000 USD anuales evaporados en producto regalado al cliente."
+      },
+      {
+        id: 4,
+        name: "La Guerra de los Turnos (Bimodal)",
+        badge: "CASO 4",
+        brief: "Promedio = 500.00 g | Dos Modas Claras (493g y 507g)",
+        narrative: "El promedio general marca unos perfectos 500.00 gramos. Pero el histograma muestra dos jorobas evidentes. El turno matutino produce a 493g y el nocturno a 507g debido a diferentes configuraciones de máquina.",
+        // Calibrated: 25 pieces at 493.0g + 25 pieces at 507.0g. Mean = 500.00g!
+        data: [
+          // Shift 1 (25 pieces around 493g, all < 495g)
+          491.5, 492.0, 492.2, 492.5, 492.6, 492.7, 492.8, 492.9, 493.0, 493.0,
+          493.0, 493.0, 493.1, 493.1, 493.2, 493.2, 493.3, 493.4, 493.5, 493.6,
+          493.7, 493.8, 494.0, 494.2, 494.5,
+          // Shift 2 (25 pieces around 507g, all > 505g)
+          505.5, 505.8, 506.0, 506.2, 506.3, 506.4, 506.5, 506.6, 506.7, 506.8,
+          506.9, 507.0, 507.0, 507.0, 507.0, 507.1, 507.2, 507.3, 507.4, 507.5,
+          507.6, 507.8, 508.0, 508.2, 508.5
+        ],
+        costUnderFixed: 1250, // 25 pzas * $50 legal penalty
+        costOverFixed: 262,
+        costReworkFixed: 750, // 50 pzas inspection/rework
+        correctDecision: 'stratify',
+        explanationCorrect: "¡Criterio Estratégico Sobresaliente! Identificaste el engaño de la bimodalidad. El promedio de 500.00g era ficticio: ninguna pieza real pesaba 500g. Al estratificar y auditar los turnos por separado, atacas la causa raíz de la inconsistencia.",
+        explanationWrong: "Error de análisis: No detectaste las dos modas en la distribución. Asumir que el proceso es uno solo cuando tienes dos procesos mezclados impide resolver las inconsistencias entre operadores o cavidades.",
+        financialImpactPositive: "+$18,400 USD de eficiencia al estandarizar los parámetros de operación de ambos turnos.",
+        financialImpactNegative: "-$12,000 USD en reprocesos y quejas continuas por variabilidad entre turnos."
+      },
+      {
+        id: 5,
+        name: "Excelencia de Clase Mundial (Six Sigma)",
+        badge: "CASO 5",
+        brief: "Promedio = 500.05 g | s = 1.05 g | Cero Defectos",
+        narrative: "Lote muestreado tras la reingeniería de línea. El promedio está centrado en 500.05g, la mediana en 500.00g, la moda en 500g y la dispersión es muy pequeña (s = 1.05 g).",
+        // Calibrated: 50 pieces strictly inside [497.5g, 502.5g]
+        data: [
+          497.8, 498.2, 498.5, 498.8, 499.0, 499.1, 499.2, 499.3, 499.4, 499.5,
+          499.6, 499.7, 499.8, 499.8, 499.9, 499.9, 500.0, 500.0, 500.0, 500.0,
+          500.0, 500.0, 500.0, 500.1, 500.1, 500.1, 500.1, 500.2, 500.2, 500.2,
+          500.3, 500.3, 500.4, 500.4, 500.5, 500.5, 500.6, 500.6, 500.7, 500.8,
+          500.9, 501.0, 501.1, 501.2, 501.3, 501.5, 501.7, 501.9, 502.1, 502.4
+        ],
+        costUnderFixed: 0,
+        costOverFixed: 0,
+        costReworkFixed: 0,
+        correctDecision: 'release',
+        explanationCorrect: "¡Decisión Perfecta! El proceso está centrado, con simetría total (media ≈ mediana ≈ moda ≈ 500g) y dispersión mínima (s = 1.05 g). El 100% del lote cumple con holgura. Liberación inmediata sin costos de inspección adicional.",
+        explanationWrong: "Error: Este lote cumple sobradamente con las especificaciones de ingeniería. Retenerlo o intervenir la máquina agrega costo innecesario y desestabiliza un proceso que está en estado ideal.",
+        financialImpactPositive: "+$45,000 USD de flujo de caja libre al mantener entregas a tiempo con cero defectos.",
+        financialImpactNegative: "-$3,500 USD por demoras de embarque injustificadas."
+      }
+    ];
+
+    let currentScenario = SCENARIOS[0];
+    let scenarioData = [];
+    let scenarioChartInstance = null;
+
+    function loadScenario(scNum) {
+      playSound('click');
+      currentScenario = SCENARIOS[scNum - 1];
+      // Clone deterministic array
+      scenarioData = [...currentScenario.data];
+
+      // Update button styling
+      for (let i = 1; i <= 5; i++) {
+        const btn = document.getElementById(`sc-btn-${i}`);
+        if (i === scNum) {
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold border transition bg-sky-600 text-white border-sky-500 shadow';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold border transition bg-slate-800 text-slate-300 border-slate-700 hover:text-white';
+        }
+      }
+
+      // Populate scenario view
+      document.getElementById('sc-badge').textContent = currentScenario.badge;
+      document.getElementById('sc-title').textContent = currentScenario.name;
+      document.getElementById('sc-brief').textContent = currentScenario.brief;
+      document.getElementById('sc-narrative').innerHTML = currentScenario.narrative;
+
+      // Hide previous feedback
+      document.getElementById('decisionFeedbackCard').classList.add('hidden');
+
+      // Update stats and financial board
+      const stats = calcStatistics(scenarioData);
+      document.getElementById('sc-stat-mean').textContent = `${stats.mean.toFixed(2)} g`;
+      document.getElementById('sc-stat-median').textContent = `${stats.median.toFixed(2)} g`;
+      document.getElementById('sc-stat-std').textContent = `${stats.std.toFixed(2)} g`;
+      document.getElementById('sc-stat-mode').textContent = `${stats.mode.toFixed(1)} g`;
+      document.getElementById('sc-stat-out').textContent = `${stats.totalDefects} / 50`;
+
+      // Financial calculations (batch scale)
+      const costLegal = currentScenario.costUnderFixed;
+      const costGiveaway = currentScenario.costOverFixed;
+      const costRework = currentScenario.costReworkFixed;
+      const totalImpact = costLegal + costGiveaway + costRework;
+
+      document.getElementById('sc-cost-under').textContent = costLegal > 0 ? `-$${costLegal.toFixed(0)} USD (${stats.underCount} pzas)` : '$0 USD';
+      document.getElementById('sc-cost-over').textContent = costGiveaway > 0 ? `-$${costGiveaway.toFixed(0)} USD` : '$0 USD';
+      document.getElementById('sc-cost-rework').textContent = costRework > 0 ? `-$${costRework.toFixed(0)} USD` : '$0 USD';
+      document.getElementById('sc-cost-total').textContent = totalImpact === 0 ? '$0 USD (Lote Perfecto)' : `-$${totalImpact.toFixed(0)} USD`;
+      document.getElementById('sc-cost-total').className = totalImpact === 0 ? 'text-base font-extrabold text-emerald-400' : 'text-base font-extrabold text-rose-400';
+
+      renderScenarioChart();
+    }
+
+    function renderScenarioChart() {
+      const canvas = document.getElementById('scenarioChart');
+      if (!canvas) return;
+
+      // Build histogram bins (480 to 520 in steps of 2g)
+      const binMin = 480;
+      const binMax = 520;
+      const binStep = 2;
+      const binLabels = [];
+      const binCounts = [];
+      const binColors = [];
+
+      for (let b = binMin; b <= binMax; b += binStep) {
+        binLabels.push(`${b}-${b + binStep}g`);
+        let count = 0;
+        scenarioData.forEach(val => {
+          if (b === binMax) {
+            if (val >= b) count++;
+          } else if (b === binMin) {
+            if (val < b + binStep) count++;
+          } else {
+            if (val >= b && val < b + binStep) count++;
+          }
+        });
+        binCounts.push(count);
+
+        // Color bars according to quality specs
+        const mid = b + binStep / 2;
+        if (mid < 495) {
+          binColors.push('rgba(244, 63, 94, 0.85)'); // Red: Underfilled
+        } else if (mid > 505) {
+          binColors.push('rgba(245, 158, 11, 0.85)'); // Amber: Giveaway
+        } else {
+          binColors.push('rgba(16, 185, 129, 0.85)'); // Green: In spec
+        }
+      }
+
+      if (scenarioChartInstance) {
+        scenarioChartInstance.destroy();
+      }
+
+      scenarioChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: binLabels,
+          datasets: [{
+            label: 'Frecuencia de Piezas (n=50)',
+            data: binCounts,
+            backgroundColor: binColors,
+            borderRadius: 6,
+            borderWidth: 1,
+            borderColor: '#1e293b'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: (items) => `Rango: ${items[0].label}`,
+                label: (item) => `${item.raw} piezas registradas`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8', font: { size: 10, family: 'Plus Jakarta Sans' } }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8', precision: 0 }
+            }
+          }
+        }
+      });
+    }
+
+    function submitDecision(decisionCode) {
+      const card = document.getElementById('decisionFeedbackCard');
+      const iconWrap = document.getElementById('feedbackIconWrap');
+      const icon = document.getElementById('feedbackIcon');
+      const title = document.getElementById('feedbackTitle');
+      const badge = document.getElementById('feedbackBadge');
+      const text = document.getElementById('feedbackText');
+      const fin = document.getElementById('feedbackFinancialImpact');
+
+      card.classList.remove('hidden');
+
+      if (decisionCode === currentScenario.correctDecision) {
+        playSound('success');
+        card.className = 'p-5 rounded-2xl border bg-emerald-950/40 border-emerald-500/50 transition duration-300';
+        iconWrap.className = 'p-3 rounded-xl shrink-0 mt-1 bg-emerald-500/20 text-emerald-400';
+        icon.setAttribute('data-lucide', 'award');
+        badge.className = 'text-xs font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider bg-emerald-900/80 text-emerald-300 border border-emerald-700';
+        badge.textContent = 'DIAGNÓSTICO ACERTADO (A+)';
+        title.textContent = '¡Excelente Criterio de Ingeniería en Gestión!';
+        title.className = 'text-base font-bold text-emerald-400';
+        text.innerHTML = currentScenario.explanationCorrect;
+        fin.innerHTML = `Impacto en EBITDA: <span class="text-emerald-400 font-bold">${currentScenario.financialImpactPositive}</span>`;
+      } else {
+        playSound('warning');
+        card.className = 'p-5 rounded-2xl border bg-rose-950/40 border-rose-500/50 transition duration-300';
+        iconWrap.className = 'p-3 rounded-xl shrink-0 mt-1 bg-rose-500/20 text-rose-400';
+        icon.setAttribute('data-lucide', 'alert-octagon');
+        badge.className = 'text-xs font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider bg-rose-900/80 text-rose-300 border border-rose-700';
+        badge.textContent = 'DICTAMEN GERENCIAL FALLIDO';
+        title.textContent = 'Decisión con Alto Costo Oculto';
+        title.className = 'text-base font-bold text-rose-400';
+        text.innerHTML = currentScenario.explanationWrong;
+        fin.innerHTML = `Pérdida Económica Evitable: <span class="text-rose-400 font-bold">${currentScenario.financialImpactNegative}</span>`;
+      }
+
+      lucide.createIcons();
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    /* ============================================================= */
+    /* MODO 3: DUELO DE PROVEEDORES (TCO Y COMPRAS ESTRATÉGICAS)     */
+    /* ============================================================= */
+    let chartAInstance = null;
+    let chartBInstance = null;
+
+    // Fixed realistic dataset for Supplier A (Controlled, tight sigma)
+    const dataSupplierA = [
+      498.5, 499.1, 499.4, 499.8, 500.0, 500.1, 500.2, 500.2, 500.3, 500.5,
+      498.8, 499.2, 499.6, 499.9, 500.0, 500.1, 500.2, 500.3, 500.4, 500.6,
+      498.9, 499.3, 499.7, 499.9, 500.1, 500.2, 500.2, 500.3, 500.4, 500.7,
+      499.0, 499.3, 499.7, 500.0, 500.1, 500.2, 500.3, 500.4, 500.5, 500.8,
+      499.1, 499.4, 499.8, 500.0, 500.1, 500.2, 500.3, 500.4, 500.5, 501.2
+    ];
+
+    // Dataset for Supplier B (Bimodal, deceptive average 500.00g but high defects)
+    const dataSupplierB = [
+      490.2, 491.5, 492.1, 492.8, 493.0, 493.2, 493.5, 494.0, 494.2, 494.5,
+      491.0, 492.0, 492.5, 493.0, 493.1, 493.3, 493.8, 494.1, 494.4, 494.8,
+      492.2, 492.7, 493.0, 493.2, 493.4, 506.6, 506.8, 507.0, 507.2, 507.5,
+      505.2, 505.8, 506.2, 506.5, 506.9, 507.1, 507.4, 507.8, 508.2, 508.6,
+      505.5, 506.0, 506.4, 506.7, 507.0, 507.2, 507.5, 508.0, 508.5, 509.8
+    ];
+
+    function updateSupplierDuel() {
+      const volume = parseInt(document.getElementById('annualVolumeSelect').value, 10);
+
+      // Supplier Alpha Math
+      const priceA = 10.00;
+      const defectRateA = 0.00; // 0%
+      const purchaseA = volume * priceA;
+      const scrapA = 0;
+      const totalTcoA = purchaseA + scrapA;
+      const unitEffectiveA = totalTcoA / (volume * (1 - defectRateA));
+
+      // Supplier Beta Math
+      const priceB = 9.20; // 8% discount
+      const defectRateB = 0.26; // 26% of pieces outside [495, 505]
+      const purchaseB = volume * priceB;
+      // Scrap costs: purchase cost lost + $10 line disruption / rework per defect
+      const scrapB = (volume * defectRateB) * (priceB + 10.0);
+      const totalTcoB = purchaseB + scrapB;
+      const usableUnitsB = volume * (1 - defectRateB);
+      const unitEffectiveB = totalTcoB / usableUnitsB;
+
+      // Populate Alpha DOM
+      document.getElementById('tco-buy-a').textContent = `$${purchaseA.toLocaleString()} USD`;
+      document.getElementById('tco-scrap-a').textContent = `$${scrapA.toLocaleString()} USD`;
+      document.getElementById('tco-total-a').textContent = `$${totalTcoA.toLocaleString()} USD`;
+      document.getElementById('tco-unit-a').textContent = `$${unitEffectiveA.toFixed(2)} USD`;
+
+      // Populate Beta DOM
+      document.getElementById('tco-buy-b').textContent = `$${purchaseB.toLocaleString()} USD`;
+      document.getElementById('tco-scrap-b').textContent = `+$${scrapB.toLocaleString()} USD`;
+      document.getElementById('tco-total-b').textContent = `$${totalTcoB.toLocaleString()} USD`;
+      document.getElementById('tco-unit-b').textContent = `$${unitEffectiveB.toFixed(2)} USD`;
+
+      renderSupplierCharts();
+    }
+
+    function renderSupplierCharts() {
+      const canvasA = document.getElementById('chartSupplierA');
+      const canvasB = document.getElementById('chartSupplierB');
+      if (!canvasA || !canvasB) return;
+
+      const labels = ['485-490', '490-495', '495-500', '500-505', '505-510', '510-515'];
+
+      function getBinData(arr) {
+        const counts = [0, 0, 0, 0, 0, 0];
+        arr.forEach(val => {
+          if (val < 490) counts[0]++;
+          else if (val < 495) counts[1]++;
+          else if (val < 500) counts[2]++;
+          else if (val < 505) counts[3]++;
+          else if (val < 510) counts[4]++;
+          else counts[5]++;
+        });
+        return counts;
+      }
+
+      if (chartAInstance) chartAInstance.destroy();
+      if (chartBInstance) chartBInstance.destroy();
+
+      const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { display: false } },
+          y: { ticks: { color: '#94a3b8', precision: 0 }, grid: { color: 'rgba(255,255,255,0.05)' } }
+        }
+      };
+
+      // Chart A (Green controlled)
+      chartAInstance = new Chart(canvasA, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data: getBinData(dataSupplierA),
+            backgroundColor: ['#f43f5e', '#f43f5e', '#10b981', '#10b981', '#f59e0b', '#f59e0b'],
+            borderRadius: 4
+          }]
+        },
+        options: commonOptions
+      });
+
+      // Chart B (Red/Amber bimodal)
+      chartBInstance = new Chart(canvasB, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data: getBinData(dataSupplierB),
+            backgroundColor: ['#f43f5e', '#f43f5e', '#10b981', '#10b981', '#f59e0b', '#f59e0b'],
+            borderRadius: 4
+          }]
+        },
+        options: commonOptions
+      });
+    }
+
+    function chooseSupplier(choice) {
+      const box = document.getElementById('supplierResultBox');
+      const iconWrap = document.getElementById('supplierResultIconWrap');
+      const icon = document.getElementById('supplierResultIcon');
+      const title = document.getElementById('supplierResultTitle');
+      const text = document.getElementById('supplierResultText');
+
+      box.classList.remove('hidden');
+
+      if (choice === 'A') {
+        playSound('success');
+        box.className = 'p-5 rounded-2xl bg-emerald-950/40 border border-emerald-500/50 transition';
+        iconWrap.className = 'p-3 rounded-xl shrink-0 mt-1 bg-emerald-500/20 text-emerald-400';
+        icon.setAttribute('data-lucide', 'award');
+        title.textContent = '¡Decisión Estratégica Brillante! Adjudicación a Proveedor Alpha';
+        title.className = 'text-base font-bold text-emerald-400';
+        text.innerHTML = `
+          Comprendiste la lección esencial de IGE: <strong>El costo de catálogo ($10.00 vs $9.20) es un engaño financiero</strong>. Aunque el Proveedor Beta parecía más barato en papel y tenía un promedio "perfecto" de 500.00g, su alta varianza (s = 6.65 g) y distribución bimodal generan un 26% de defectos. Al considerar los paros de línea y el scrap, el Proveedor Beta termina costando <strong>$16.16 USD por pieza utilizable</strong> frente a los $10.00 del Proveedor Alpha.
+        `;
+      } else {
+        playSound('warning');
+        box.className = 'p-5 rounded-2xl bg-rose-950/40 border border-rose-500/50 transition';
+        iconWrap.className = 'p-3 rounded-xl shrink-0 mt-1 bg-rose-500/20 text-rose-400';
+        icon.setAttribute('data-lucide', 'alert-triangle');
+        title.textContent = 'Caíste en la Trampa del Precio Unitario: Proveedor Beta';
+        title.className = 'text-base font-bold text-rose-400';
+        text.innerHTML = `
+          Compraste con mentalidad de catálogo, no con criterio de Gestión Empresarial. El descuento del 8% ($9.20) fue devorado inmediatamente por el 26% de piezas defectuosas que causarán paros en tu planta. La empresa perderá decenas de miles de dólares al año. <em>La desviación estándar (s) y la bimodalidad revelaban el problema antes de firmar el contrato.</em>
+        `;
+      }
+
+      lucide.createIcons();
+      box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    /* ============================================================= */
+    /* INITIALIZATION LIFECYCLE                                      */
+    /* ============================================================= */
+    window.addEventListener('load', () => {
+      // Initialize icons
+      lucide.createIcons();
+
+      // Initialize Mode 1
+      initBeamData('normal');
+
+      // Initialize Mode 2
+      loadScenario(1);
+
+      // Trigger initial resize for canvas
+      renderBeamCanvas();
+    });
+  </script>
+</body>
+</html>
