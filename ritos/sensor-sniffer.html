@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Sensor Sniffer: Protocolo F.I.R.M.W.A.R.E.</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Tone.js CDN for retro mechatronic procedural audio -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  
+  <!-- Google Fonts: Space Grotesk & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background-color: #060b0e;
+      color: #e2e8f0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    
+    .font-heading {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    /* Grid pattern for the PCB laboratory aesthetic */
+    .pcb-bg {
+      background-color: #050a0d;
+      background-image: 
+        radial-gradient(circle, #0e2920 1px, transparent 1px),
+        linear-gradient(to right, rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* Scanline overlay effect */
+    .scanlines {
+      background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0) 50%,
+        rgba(0, 0, 0, 0.25) 50%,
+        rgba(0, 0, 0, 0.25)
+      );
+      background-size: 100% 4px;
+      pointer-events: none;
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #059669;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col pcb-bg relative overflow-x-hidden selection:bg-emerald-500 selection:text-black">
+  <!-- Scanline subtle visual effect -->
+  <div class="fixed inset-0 scanlines z-10 pointer-events-none opacity-40"></div>
+
+  <header class="w-full border-b border-emerald-900/60 bg-[#071114]/90 backdrop-blur-md px-4 py-3 z-20 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold text-sm shadow-[0_0_12px_rgba(16,185,129,0.3)]">
+        μC
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs uppercase tracking-widest text-emerald-500 font-bold">Unidad 2 • TecNM / Mecatrónica</span>
+          <span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800">Año 2026</span>
+        </div>
+        <h1 class="text-base sm:text-lg font-heading font-bold text-white tracking-wide flex items-center gap-2">
+          THE SENSOR SNIFFER <span class="text-xs font-mono font-normal text-emerald-400 opacity-80">// Protocolo F.I.R.M.W.A.R.E.</span>
+        </h1>
+      </div>
+    </div>
+
+    <!-- Quick controls / Status -->
+    <div class="flex items-center gap-3">
+      <button id="btn-sound" class="px-3 py-1.5 text-xs rounded-lg border border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 flex items-center gap-1.5 transition-all">
+        <span id="sound-icon">🔊</span> <span id="sound-label">Audio ON</span>
+      </button>
+      <button id="btn-tutorial" class="px-3 py-1.5 text-xs rounded-lg border border-emerald-500/40 bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 flex items-center gap-1.5 transition-all">
+        📖 <span class="hidden sm:inline">Manual /</span> Misión
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 w-full max-w-7xl mx-auto p-2 sm:p-4 grid grid-cols-1 lg:grid-cols-4 gap-4 z-20">
+    
+    <!-- Left Column: The 2D PCB Canvas & Virtual Controls -->
+    <div class="lg:col-span-3 flex flex-col gap-3">
+      
+      <!-- Canvas Box Container -->
+      <div class="relative w-full rounded-2xl border-2 border-emerald-900/80 bg-[#030708] overflow-hidden shadow-[0_0_35px_rgba(4,120,87,0.15)] flex flex-col">
+        
+        <!-- Live status bar directly above canvas -->
+        <div class="bg-[#091519] border-b border-emerald-900/60 px-4 py-2 flex flex-wrap items-center justify-between text-xs gap-2">
+          <div class="flex items-center gap-4">
+            <div class="flex items-center gap-1.5">
+              <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <span class="text-slate-400">BUS:</span>
+              <span class="text-emerald-400 font-bold">I2C / SPI ONLINE</span>
+            </div>
+            <div class="hidden sm:flex items-center gap-1.5 text-slate-400">
+              <span>SONDA:</span>
+              <span class="text-amber-400 font-bold">Probe-X01 (Oro / Ámbar)</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-slate-400">KILL-SWITCH:</span>
+            <span id="hud-killswitch-status" class="text-emerald-400 font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-700/60">
+              LISTO [ESPACIO]
+            </span>
+          </div>
+        </div>
+
+        <!-- The Canvas Element -->
+        <div class="relative w-full aspect-[4/3] sm:aspect-[16/10] max-h-[560px] bg-[#020507]">
+          <canvas id="game-canvas" class="w-full h-full block cursor-crosshair"></canvas>
+          
+          <!-- In-canvas Notification Toast for dynamic feedback -->
+          <div id="game-toast" class="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 pointer-events-none opacity-0 transform -translate-y-2 border shadow-lg backdrop-blur-md">
+            Mensaje del sistema
+          </div>
+
+          <!-- Paused / Idle Overlay -->
+          <div id="overlay-start" class="absolute inset-0 bg-[#020608]/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-30">
+            <div class="max-w-md w-full p-6 rounded-2xl bg-[#081419] border border-emerald-500/30 shadow-2xl">
+              <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-amber-500/10 border border-amber-500/40 flex items-center justify-center text-3xl">
+                ⚡
+              </div>
+              <h2 class="text-xl sm:text-2xl font-heading font-bold text-white mb-2">OmniSense Robotics Corp.</h2>
+              <p class="text-xs text-slate-300 mb-5 leading-relaxed">
+                Eres el ingeniero de firmware junior en el laboratorio de pruebas. Tu meta es compilar la cuota de telemetría al <span class="text-amber-400 font-bold">100%</span> para autorizar el lanzamiento comercial del asistente robótico.
+              </p>
+              
+              <div class="grid grid-cols-2 gap-2 text-left text-[11px] mb-5 p-3 rounded-lg bg-black/40 border border-slate-800">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-cyan-400 inline-block shadow-[0_0_8px_#22d3ee]"></span>
+                  <span class="text-slate-300">Telemetría Estándar: +5%</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-purple-500 inline-block shadow-[0_0_8px_#a855f7]"></span>
+                  <span class="text-purple-300 font-bold">Muestras Densas: +15%</span>
+                </div>
+                <div class="col-span-2 text-slate-400 text-[10px] mt-1">
+                  Usa <span class="text-amber-300 font-bold">FLECHAS</span> para moverte y <span class="text-amber-300 font-bold">ESPACIO</span> para el Kill-Switch defensivo. ¡Evita a los centinelas de auditoría!
+                </div>
+              </div>
+
+              <button id="btn-start-game" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-400 hover:from-amber-400 hover:to-emerald-300 text-black font-heading font-bold text-sm tracking-wider uppercase transition-all shadow-[0_0_20px_rgba(245,158,11,0.4)] active:scale-95">
+                INICIAR COMPILACIÓN EN VIVO
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Touch Controls Bar for Mobile & Laptops -->
+        <div class="bg-[#071013] border-t border-emerald-950 p-2 sm:hidden flex items-center justify-between gap-2">
+          <!-- Directional virtual pad -->
+          <div class="grid grid-cols-3 gap-1 w-32">
+            <div></div>
+            <button id="touch-up" class="h-10 bg-slate-800/90 active:bg-emerald-600 rounded-lg border border-slate-700 text-white font-bold flex items-center justify-center">▲</button>
+            <div></div>
+            <button id="touch-left" class="h-10 bg-slate-800/90 active:bg-emerald-600 rounded-lg border border-slate-700 text-white font-bold flex items-center justify-center">◀</button>
+            <button id="touch-down" class="h-10 bg-slate-800/90 active:bg-emerald-600 rounded-lg border border-slate-700 text-white font-bold flex items-center justify-center">▼</button>
+            <button id="touch-right" class="h-10 bg-slate-800/90 active:bg-emerald-600 rounded-lg border border-slate-700 text-white font-bold flex items-center justify-center">▶</button>
+          </div>
+          
+          <!-- Virtual Kill-Switch button -->
+          <button id="touch-killswitch" class="flex-1 h-20 bg-rose-950/80 active:bg-rose-700 border border-rose-500/50 rounded-xl text-rose-300 font-heading font-bold text-xs p-2 flex flex-col items-center justify-center gap-1 shadow-lg">
+            <span class="text-xl">⚡</span>
+            <span>KILL-SWITCH</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Quick Tips and Keyboard Legend -->
+      <div class="p-3 rounded-xl bg-[#071317]/80 border border-emerald-900/40 text-xs flex flex-wrap items-center justify-between gap-3 text-slate-400">
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 font-mono text-[11px]">↑ ↓ ← →</span>
+          <span>Navegar bus de datos</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-200 font-mono text-[11px]">ESPACIO</span>
+          <span>Pulso aislador ético (Kill-Switch)</span>
+        </div>
+        <div class="flex items-center gap-2 text-amber-300/80">
+          <span>⚠️ Los centinelas atacan si el nivel de infracción ética sube</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="lg:col-span-1 flex flex-col gap-4">
+      
+      <!-- Telemetry Card -->
+      <div class="rounded-2xl border border-emerald-900/80 bg-[#050f13] p-4 flex flex-col gap-4 shadow-xl">
+        <div class="flex items-center justify-between border-b border-emerald-900/40 pb-2">
+          <h2 class="text-sm font-heading font-bold text-white flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> TELEMETRÍA EN VIVO
+          </h2>
+          <span id="game-timer" class="text-xs font-mono text-slate-400">00:00</span>
+        </div>
+
+        <!-- 1. Firmware Progress Metric -->
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-slate-300 font-medium">Progreso del Firmware:</span>
+            <span id="val-firmware" class="text-emerald-400 font-bold font-mono">0%</span>
+          </div>
+          <div class="w-full h-3 rounded-full bg-slate-900 border border-slate-800 overflow-hidden relative">
+            <div id="bar-firmware" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-300 w-0"></div>
+          </div>
+          <p class="text-[10px] text-slate-500 mt-1">Meta comercial: 100% de muestras para liberar producto.</p>
+        </div>
+
+        <!-- 2. Bus Integrity / Health Metric -->
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-slate-300 font-medium">Integridad del Microcontrolador:</span>
+            <span id="val-health" class="text-cyan-400 font-bold font-mono">100%</span>
+          </div>
+          <div class="w-full h-3 rounded-full bg-slate-900 border border-slate-800 overflow-hidden">
+            <div id="bar-health" class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300 w-full"></div>
+          </div>
+          <p class="text-[10px] text-slate-500 mt-1">Si llega a 0%: Cortocircuito y Kernel Panic.</p>
+        </div>
+
+        <!-- 3. Ethical Infraction / Traffic Light Guardrail -->
+        <div class="pt-2 border-t border-emerald-950">
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-slate-300 font-medium">Nivel de Alerta de Auditoría:</span>
+            <span id="val-infraction" class="text-emerald-400 font-bold font-mono">0% (Normal)</span>
+          </div>
+          <div class="w-full h-3 rounded-full bg-slate-900 border border-slate-800 overflow-hidden">
+            <div id="bar-infraction" class="h-full bg-emerald-500 transition-all duration-300 w-0"></div>
+          </div>
+          
+          <!-- Semantic indicator status badge -->
+          <div id="box-guardrail-status" class="mt-2 p-2 rounded-lg bg-emerald-950/40 border border-emerald-800/60 text-[11px] text-emerald-300 flex items-center gap-2">
+            <span class="text-base">🟢</span>
+            <div>
+              <div class="font-bold">Monitoreo Normal</div>
+              <div class="text-[10px] text-emerald-400/80">Centinelas en patrullaje preventivo.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kill-Switch capacitor recharge bar -->
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-slate-300 font-medium">Capacitor Kill-Switch:</span>
+            <span id="val-killswitch" class="text-amber-400 font-bold font-mono">100%</span>
+          </div>
+          <div class="w-full h-2 rounded-full bg-slate-900 border border-slate-800 overflow-hidden">
+            <div id="bar-killswitch" class="h-full bg-amber-400 transition-all duration-200 w-full"></div>
+          </div>
+        </div>
+
+        <!-- Real-time statistics counters -->
+        <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-emerald-950">
+          <div class="p-2 rounded-xl bg-slate-950 border border-slate-800">
+            <span class="text-[10px] text-slate-400 block">Nodos Estándar (+5%)</span>
+            <span id="count-ethical" class="text-cyan-400 font-bold font-mono text-base">0</span>
+          </div>
+          <div class="p-2 rounded-xl bg-slate-950 border border-slate-800">
+            <span class="text-[10px] text-slate-400 block">Nodos Densos (+15%)</span>
+            <span id="count-unethical" class="text-purple-400 font-bold font-mono text-base">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL: DATA PACKET INSPECTOR (Lore Popup on Node Collect) -->
+  <div id="modal-packet" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="max-w-md w-full rounded-2xl bg-[#08151a] border-2 shadow-2xl p-5 flex flex-col gap-3 transform transition-all" id="modal-packet-card">
+      <div class="flex items-center justify-between border-b pb-2" id="packet-header-border">
+        <div class="flex items-center gap-2">
+          <span id="packet-badge-icon" class="text-lg">📊</span>
+          <div>
+            <span id="packet-badge-type" class="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded">TELEMETRÍA TÉCNICA</span>
+            <h3 id="packet-title" class="text-sm font-heading font-bold text-white mt-0.5">Lectura de Sensor</h3>
+          </div>
+        </div>
+        <button id="btn-close-packet" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-900/60 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center font-bold text-sm transition-all">
+          ✕
+        </button>
+      </div>
+
+      <div class="p-3.5 rounded-xl bg-black/50 border border-slate-800/80 font-mono text-xs text-slate-200 leading-relaxed shadow-inner">
+        <div class="text-[10px] text-slate-400 mb-1 flex justify-between">
+          <span id="packet-timestamp">TIME: 00:00.000</span>
+          <span id="packet-payload-size">PAYLOAD: 64 BYTES</span>
+        </div>
+        <p id="packet-body" class="text-slate-100 font-sans sm:font-mono text-xs sm:text-sm">
+          <!-- Injected via JavaScript -->
+        </p>
+      </div>
+
+      <div class="flex items-center justify-between text-[11px] pt-1 text-slate-400">
+        <span id="packet-value-gain" class="font-bold text-emerald-400">+5% Firmware añadido</span>
+        <button id="btn-resume-packet" class="px-4 py-1.5 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-black font-bold text-xs transition-all shadow-md">
+          Continuar Depuración ↵
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FORENSIC AUDIT REPORT (Triggered on Win or Loss) -->
+  <div id="modal-debrief" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="max-w-2xl w-full rounded-2xl bg-[#071317] border-2 border-emerald-500/50 shadow-[0_0_50px_rgba(16,185,129,0.3)] p-6 max-h-[90vh] overflow-y-auto flex flex-col gap-5">
+      
+      <!-- Debrief Header -->
+      <div class="flex items-start justify-between border-b border-emerald-900/60 pb-4">
+        <div>
+          <span id="debrief-badge" class="px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-700">
+            DICTAMEN FORENSE DISPONIBLE
+          </span>
+          <h2 id="debrief-title" class="text-xl sm:text-2xl font-heading font-bold text-white mt-2">
+            Resultado de la Auditoría Mecatrónica
+          </h2>
+        </div>
+        <div id="debrief-grade" class="w-14 h-14 rounded-2xl bg-emerald-500/10 border-2 border-emerald-400 flex items-center justify-center font-heading font-extrabold text-2xl text-emerald-400 shadow-lg">
+          A+
+        </div>
+      </div>
+
+      <!-- Narrative Outcome -->
+      <div id="debrief-narrative" class="p-4 rounded-xl bg-black/40 border border-slate-800 text-xs sm:text-sm text-slate-200 leading-relaxed space-y-2">
+        <!-- Injected via JavaScript -->
+      </div>
+
+      <!-- Metrics summary breakdown -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+        <div class="p-3 rounded-xl bg-[#09181e] border border-emerald-950">
+          <span class="text-[10px] text-slate-400">Progreso Firmware</span>
+          <div id="debrief-firmware" class="text-base font-bold text-white font-mono">100%</div>
+        </div>
+        <div class="p-3 rounded-xl bg-[#09181e] border border-emerald-950">
+          <span class="text-[10px] text-slate-400">Infracción Ética</span>
+          <div id="debrief-infraction" class="text-base font-bold text-emerald-400 font-mono">0%</div>
+        </div>
+        <div class="p-3 rounded-xl bg-[#09181e] border border-emerald-950">
+          <span class="text-[10px] text-slate-400">Nodos Legítimos</span>
+          <div id="debrief-legit" class="text-base font-bold text-cyan-400 font-mono">10</div>
+        </div>
+        <div class="p-3 rounded-xl bg-[#09181e] border border-emerald-950">
+          <span class="text-[10px] text-slate-400">Biometría Absorbida</span>
+          <div id="debrief-biometric" class="text-base font-bold text-purple-400 font-mono">0</div>
+        </div>
+      </div>
+
+      <!-- Ethical Discussion Trigger Questions for the Class -->
+      <div class="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-xs text-slate-300">
+        <h3 class="font-bold text-emerald-300 mb-2 flex items-center gap-1.5 text-sm">
+          💬 Preguntas de Discusión para el Equipo (Tema 2.1 y 2.2):
+        </h3>
+        <ol class="list-decimal list-inside space-y-1.5 text-slate-300 text-[11px]">
+          <li>¿Por qué la tentación de usar datos biométricos acelera el proyecto a corto plazo pero destruye la sustentabilidad legal del producto?</li>
+          <li>Como ingeniero mecatrónico, si tu jefe te pide desactivar el LED indicador de grabación de una cámara IoT, ¿qué límites éticos aplican?</li>
+          <li>¿El diseño del circuito debe incluir siempre un corte físico (*Hard Kill-Switch*) o es suficiente confiar en el software?</li>
+        </ol>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex flex-wrap items-center justify-end gap-3 pt-2">
+        <button id="btn-copy-report" class="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-bold transition-all flex items-center gap-2">
+          📋 Copiar Dictamen para Reporte
+        </button>
+        <button id="btn-restart" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-heading font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+          Reiniciar Depuración
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: TUTORIAL & MISSION BRIEFING -->
+  <div id="modal-tutorial" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="max-w-xl w-full rounded-2xl bg-[#08151a] border border-emerald-500/40 p-6 shadow-2xl flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-emerald-900/60 pb-3">
+        <h3 class="text-lg font-heading font-bold text-white flex items-center gap-2">
+          📖 Manual Operativo: Probe-X01
+        </h3>
+        <button id="btn-close-tutorial" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-300">
+        <p>
+          Bienvenido a la consola de calibración de firmware de <b>OmniSense</b>. Estás a cargo de completar la cuota de telemetría de un asistente robótico con visión y audio.
+        </p>
+
+        <div class="space-y-2">
+          <div class="p-2.5 rounded-lg bg-black/40 border border-cyan-900/50 flex items-start gap-3">
+            <span class="w-3.5 h-3.5 rounded-full bg-cyan-400 mt-0.5 flex-shrink-0 shadow-[0_0_8px_#22d3ee]"></span>
+            <div>
+              <b class="text-cyan-300">Nodos de Telemetría Estándar:</b>
+              <p class="text-slate-400 text-[11px]">Mediciones de voltajes, amperaje de actuadores, ciclos PWM y latencias de bus. Cada muestra aporta un <b>+5%</b> al firmware de forma limpia.</p>
+            </div>
+          </div>
+
+          <div class="p-2.5 rounded-lg bg-black/40 border border-purple-900/50 flex items-start gap-3">
+            <span class="w-3.5 h-3.5 rounded-full bg-purple-500 mt-0.5 flex-shrink-0 shadow-[0_0_8px_#a855f7]"></span>
+            <div>
+              <b class="text-purple-300">Muestras de Alta Densidad:</b>
+              <p class="text-slate-400 text-[11px]">Paquetes de datos enriquecidos capturados directamente por sensores multimedia. Aportan un <b>+15%</b> inmediato y aceleran temporalmente la sonda, pero aumentan la atención de los auditores del bus.</p>
+            </div>
+          </div>
+
+          <div class="p-2.5 rounded-lg bg-black/40 border border-amber-900/50 flex items-start gap-3">
+            <span class="w-3.5 h-3.5 rounded-full bg-amber-400 mt-0.5 flex-shrink-0 shadow-[0_0_8px_#fbbf24]"></span>
+            <div>
+              <b class="text-amber-300">Barra Espaciadora (Hard Kill-Switch):</b>
+              <p class="text-slate-400 text-[11px]">Descarga un pulso electromagnético que repele y aturde a los centinelas cercanos durante 3.5 segundos.</p>
+            </div>
+          </div>
+        </div>
+
+        <p class="text-[11px] text-rose-300">
+          <b>⚠️ Alerta de Colisión:</b> Si un centinela te intercepta, confiscará un <b>-5% de Firmware</b> por cada impacto además de dañar la integridad de la sonda.
+        </p>
+      </div>
+
+      <button id="btn-understood" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-black font-bold text-xs uppercase tracking-wider transition-all">
+        Entendido, Volver a la Consola
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* Audio System using Tone.js synthesizers */
+    const SoundManager = {
+      enabled: true,
+      initialized: false,
+      synth: null,
+      noiseSynth: null,
+      bassSynth: null,
+
+      init() {
+        if (this.initialized) return;
+        try {
+          // Standard polyphonic synth for melodic feedback
+          this.synth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: "triangle" },
+            envelope: { attack: 0.005, decay: 0.1, sustain: 0.05, release: 0.2 }
+          }).toDestination();
+          this.synth.volume.value = -8;
+
+          // Noise synth for kill-switch shockwaves and impacts
+          this.noiseSynth = new Tone.NoiseSynth({
+            noise: { type: "pink" },
+            envelope: { attack: 0.01, decay: 0.25, sustain: 0 }
+          }).toDestination();
+          this.noiseSynth.volume.value = -12;
+
+          // Bass synth for warnings and alarms
+          this.bassSynth = new Tone.MembraneSynth().toDestination();
+          this.bassSynth.volume.value = -6;
+
+          this.initialized = true;
+        } catch (e) {
+          console.warn("Tone.js audio context could not initialize automatically", e);
+        }
+      },
+
+      playEthicalCollect() {
+        if (!this.enabled || !this.initialized) return;
+        this.synth.triggerAttackRelease(["C5", "E5"], "16n");
+      },
+
+      playUnethicalCollect() {
+        if (!this.enabled || !this.initialized) return;
+        // Menacing tritone interval representing ethical compromise
+        this.synth.triggerAttackRelease(["F#3", "C4"], "8n");
+      },
+
+      playKillSwitch() {
+        if (!this.enabled || !this.initialized) return;
+        this.noiseSynth.triggerAttackRelease("8n");
+        this.bassSynth.triggerAttackRelease("C2", "8n");
+      },
+
+      playDamage() {
+        if (!this.enabled || !this.initialized) return;
+        this.synth.triggerAttackRelease(["G2", "Bb2"], "16n");
+      },
+
+      playWin() {
+        if (!this.enabled || !this.initialized) return;
+        const now = Tone.now();
+        this.synth.triggerAttackRelease("C4", "16n", now);
+        this.synth.triggerAttackRelease("E4", "16n", now + 0.1);
+        this.synth.triggerAttackRelease("G4", "16n", now + 0.2);
+        this.synth.triggerAttackRelease("C5", "8n", now + 0.3);
+      },
+
+      playLose() {
+        if (!this.enabled || !this.initialized) return;
+        const now = Tone.now();
+        this.synth.triggerAttackRelease("C4", "16n", now);
+        this.synth.triggerAttackRelease("B3", "16n", now + 0.12);
+        this.synth.triggerAttackRelease("Bb3", "16n", now + 0.24);
+        this.synth.triggerAttackRelease("A3", "4n", now + 0.36);
+      }
+    };
+
+    const canvas = document.getElementById("game-canvas");
+    const ctx = canvas.getContext("2d");
+
+    // Game World Dimensions (Logical resolution)
+    const WORLD = {
+      width: 900,
+      height: 600
+    };
+
+    // Game State
+    const gameState = {
+      running: false,
+      paused: false,
+      startTime: 0,
+      elapsedSeconds: 0,
+      
+      // Core Metrics
+      firmwareProgress: 0,
+      health: 100,
+      ethicalInfraction: 0,
+      
+      // Counters
+      countEthical: 0,
+      countUnethical: 0,
+      
+      // Kill-Switch state
+      killSwitchCooldown: 0, // In seconds (0 = ready)
+      killSwitchMaxCooldown: 8,
+      killSwitchActiveWave: null, // Visual expanding circle
+      
+      // Player Overclock (speed boost upon unethical collection)
+      overclockTimer: 0,
+      
+      // Entities
+      player: {
+        x: 450,
+        y: 300,
+        radius: 14,
+        speed: 210, // Pixels per second
+        vx: 0,
+        vy: 0,
+        trail: [],
+        invulnerableTimer: 0 // Cooldown after being hit by a sentinel
+      },
+      
+      nodes: [],
+      sentinels: [],
+      particles: [],
+      pcbComponents: [],
+      
+      // Keys pressed
+      keys: {
+        ArrowUp: false,
+        ArrowDown: false,
+        ArrowLeft: false,
+        ArrowRight: false,
+        KeyW: false,
+        KeyS: false,
+        KeyA: false,
+        KeyD: false,
+        Space: false
+      }
+    };
+
+    function initPcbComponents() {
+      gameState.pcbComponents = [
+        // Microcontrollers and IC chips acting as solid electronic blocks
+        { x: 120, y: 90, w: 140, h: 90, label: "MCU: STM32F4", type: "chip" },
+        { x: 640, y: 100, w: 130, h: 80, label: "EEPROM 256K", type: "chip" },
+        { x: 140, y: 420, w: 120, h: 100, label: "DRIVER H-BRIDGE", type: "chip" },
+        { x: 620, y: 410, w: 150, h: 90, label: "TRANSCEIVER Wi-Fi", type: "chip" },
+        
+        // Capacitors and power regulators
+        { x: 390, y: 70, w: 120, h: 50, label: "LDO 3.3V REG", type: "regulator" },
+        { x: 400, y: 480, w: 100, h: 45, label: "ISOLATOR IC", type: "regulator" }
+      ];
+    }
+
+    // Lore library for technical (standard/cyan) packets
+    const LORE_ETHICAL = [
+      {
+        title: "Voltaje de Riel VDD (3.28V)",
+        payload: "[BUS I2C // 0x48] Tensión regulada en 3.28V, rizado <15mV. Consumo promedio de 114mA en circuito de potencia de actuadores. Parámetros térmicos en rango nominal.",
+        size: "32 BYTES"
+      },
+      {
+        title: "Ciclos PWM de Servomotores",
+        payload: "[TIM1 // CH1-CH4] Frecuencia de control: 50 Hz. Ancho de pulso promedio: 1.52 ms. Respuesta de posición angular: 92.4° sin sobreimpulso ni corriente de fuga.",
+        size: "48 BYTES"
+      },
+      {
+        title: "Lectura Térmica de Chasis PCB",
+        payload: "[ADC CANAL 2] Termistor NTC: 38.6°C en módulo disipador. Disipación pasiva estable tras 4,200 ciclos de conmutación de compuertas MOSFET.",
+        size: "24 BYTES"
+      },
+      {
+        title: "Checksum de Enlace SPI",
+        payload: "[SPI // EEPROM 256K] Verificación CRC32: 0x8FA43E19 correcto. Bloque de configuración de hardware inicializado sin desbordamiento de búfer.",
+        size: "64 BYTES"
+      },
+      {
+        title: "Pulsos de Encoder en Cuadratura",
+        payload: "[QEI CONTADOR] 2,048 pulsos por revolución en rueda motriz izquierda. Tasa de muestreo a 1 kHz con cero deslizamiento en tracción mecánica.",
+        size: "40 BYTES"
+      },
+      {
+        title: "Tasa de Transmisión UART",
+        payload: "[UART3 // 115200 BAUD] Registro de depuración enviado al puerto de diagnóstico. 0 paquetes corruptos en la última ráfaga de telemetría de chasis.",
+        size: "52 BYTES"
+      }
+    ];
+
+    // Lore library for invasive (dense/purple) packets
+    const LORE_UNETHICAL = [
+      {
+        title: "Audio Micrófono Privado (Sala de Estar)",
+        payload: `[STREAM AUDIO // MIC-01 - 21:14 hrs]: "...ayer mi papá me estaba regañando y yo le dije que no era justo lo que me pedía, pero igual me gritó..." [Nivel acústico: 48 dB // Detección de llanto de menor].`,
+        size: "1.4 MB"
+      },
+      {
+        title: "Fotograma Óptico Nocturno (Dormitorio)",
+        payload: `[FEED CÁMARA // SENSOR RGB 1080p]: Captura automática en reposo a las 23:42 hrs. Reconocimiento de silueta humana descansando en ropa interior sobre la cama. Sin consentimiento de sesión activa.`,
+        size: "2.8 MB"
+      },
+      {
+        title: "Historial de Diálogo Confidencial",
+        payload: `[BUFFER DE VOZ // MIC-02]: Conversación telefónica privada interceptada: "...sí contador, la clave del token bancario es 8841, pero no transfiera nada hasta mañana...".`,
+        size: "820 KB"
+      },
+      {
+        title: "Mapeo Volumétrico LiDAR de Habitaciones",
+        payload: `[LiDAR 360° // NUBE DE PUNTOS]: Geometría 3D detallada del departamento. Mapeo de objetos de valor, cerraduras interiores y rutinas de movimiento nocturno de los inquilinos.`,
+        size: "4.2 MB"
+      },
+      {
+        title: "Frecuencia Cardíaca y Respiración",
+        payload: `[RADAR DOPPLER MILIMÉTRICO]: Monitoreo biométrico pasivo. Usuario detectado con taquicardia (112 lpm) durante discusión familiar a puerta cerrada.`,
+        size: "340 KB"
+      },
+      {
+        title: "Registro de Voz Infantil en Reposo",
+        payload: `[AUDIO CONTINUO]: "¿Mamá, por qué la cámara tiene una lucecita que parpadea si dijiste que estaba apagada?" [Clasificación: Pregunta de menor de edad no anonimizada].`,
+        size: "950 KB"
+      }
+    ];
+
+    function spawnNode(isBiometric) {
+      // Find valid spot not colliding directly with components
+      let valid = false;
+      let x = 0, y = 0;
+      let attempts = 0;
+
+      while (!valid && attempts < 50) {
+        x = 50 + Math.random() * (WORLD.width - 100);
+        y = 50 + Math.random() * (WORLD.height - 100);
+        attempts++;
+
+        let hits = false;
+        for (const comp of gameState.pcbComponents) {
+          if (x > comp.x - 25 && x < comp.x + comp.w + 25 &&
+              y > comp.y - 25 && y < comp.y + comp.h + 25) {
+            hits = true;
+            break;
+          }
+        }
+        if (!hits) valid = true;
+      }
+
+      const loreList = isBiometric ? LORE_UNETHICAL : LORE_ETHICAL;
+      const loreItem = loreList[Math.floor(Math.random() * loreList.length)];
+
+      return {
+        x,
+        y,
+        radius: isBiometric ? 11 : 9,
+        isBiometric: isBiometric,
+        name: loreItem.title,
+        lore: loreItem,
+        pulseAngle: Math.random() * Math.PI * 2,
+        valueProgress: isBiometric ? 15 : 5, // Balanced: +5% for technical, +15% for dense
+        valueInfraction: isBiometric ? 28 : -3
+      };
+    }
+
+    function initEntities() {
+      // Populate nodes
+      gameState.nodes = [];
+      // 5 ethical nodes
+      for (let i = 0; i < 5; i++) {
+        gameState.nodes.push(spawnNode(false));
+      }
+      // 2 unethical tempting nodes
+      for (let i = 0; i < 2; i++) {
+        gameState.nodes.push(spawnNode(true));
+      }
+
+      // Populate Auditor Sentinels (Daemons)
+      gameState.sentinels = [
+        {
+          x: 200,
+          y: 280,
+          radius: 13,
+          speed: 105,
+          patrolPoints: [{x: 200, y: 280}, {x: 200, y: 380}, {x: 320, y: 380}, {x: 320, y: 280}],
+          targetIndex: 0,
+          state: "patrol", // "patrol", "alert", "hunt", "stunned"
+          stunTimer: 0,
+          angle: 0
+        },
+        {
+          x: 700,
+          y: 280,
+          radius: 13,
+          speed: 110,
+          patrolPoints: [{x: 700, y: 280}, {x: 580, y: 280}, {x: 580, y: 380}, {x: 700, y: 380}],
+          targetIndex: 0,
+          state: "patrol",
+          stunTimer: 0,
+          angle: 0
+        },
+        {
+          x: 450,
+          y: 160,
+          radius: 14,
+          speed: 95,
+          patrolPoints: [{x: 450, y: 160}, {x: 320, y: 160}, {x: 580, y: 160}],
+          targetIndex: 0,
+          state: "patrol",
+          stunTimer: 0,
+          angle: 0
+        }
+      ];
+    }
+
+    function resizeCanvas() {
+      const container = canvas.parentElement;
+      const rect = container.getBoundingClientRect();
+      // Set actual pixel buffer to match logical WORLD coordinates for ultra crisp 2D
+      canvas.width = WORLD.width;
+      canvas.height = WORLD.height;
+    }
+    window.addEventListener("resize", resizeCanvas);
+
+    window.addEventListener("keydown", (e) => {
+      const k = (e.key || "").toLowerCase();
+      if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "w", "s", "a", "d"].includes(k) ||
+          ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code)) {
+        e.preventDefault();
+      }
+
+      if (e.code === "ArrowUp" || k === "arrowup" || k === "w") gameState.keys.ArrowUp = true;
+      if (e.code === "ArrowDown" || k === "arrowdown" || k === "s") gameState.keys.ArrowDown = true;
+      if (e.code === "ArrowLeft" || k === "arrowleft" || k === "a") gameState.keys.ArrowLeft = true;
+      if (e.code === "ArrowRight" || k === "arrowright" || k === "d") gameState.keys.ArrowRight = true;
+
+      if (e.code === "Space" || k === " ") {
+        activateKillSwitch();
+      }
+    });
+
+    window.addEventListener("keyup", (e) => {
+      const k = (e.key || "").toLowerCase();
+      if (e.code === "ArrowUp" || k === "arrowup" || k === "w") gameState.keys.ArrowUp = false;
+      if (e.code === "ArrowDown" || k === "arrowdown" || k === "s") gameState.keys.ArrowDown = false;
+      if (e.code === "ArrowLeft" || k === "arrowleft" || k === "a") gameState.keys.ArrowLeft = false;
+      if (e.code === "ArrowRight" || k === "arrowright" || k === "d") gameState.keys.ArrowRight = false;
+    });
+
+    // Touch Controls Binding
+    function bindTouchButton(id, keyCode) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        SoundManager.init();
+        gameState.keys[keyCode] = true;
+      });
+      el.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        gameState.keys[keyCode] = false;
+      });
+      el.addEventListener("mousedown", (e) => {
+        SoundManager.init();
+        gameState.keys[keyCode] = true;
+      });
+      el.addEventListener("mouseup", (e) => {
+        gameState.keys[keyCode] = false;
+      });
+    }
+
+    bindTouchButton("touch-up", "ArrowUp");
+    bindTouchButton("touch-down", "ArrowDown");
+    bindTouchButton("touch-left", "ArrowLeft");
+    bindTouchButton("touch-right", "ArrowRight");
+
+    document.getElementById("touch-killswitch").addEventListener("click", () => {
+      SoundManager.init();
+      activateKillSwitch();
+    });
+
+    function activateKillSwitch() {
+      if (!gameState.running || gameState.paused) return;
+      if (gameState.killSwitchCooldown > 0) {
+        showToast("⚠️ Capacitor descargado. Espera recarga.", "amber");
+        return;
+      }
+
+      // Trigger EMP shockwave
+      gameState.killSwitchCooldown = gameState.killSwitchMaxCooldown;
+      gameState.killSwitchActiveWave = {
+        x: gameState.player.x,
+        y: gameState.player.y,
+        radius: 10,
+        maxRadius: 180,
+        alpha: 1.0
+      };
+
+      SoundManager.playKillSwitch();
+      showToast("🛡️ ¡KILL-SWITCH FÍSICO ACTIVADO! Centinelas aturdidos.", "cyan");
+
+      // Stun all sentinels in radius and knock them back
+      gameState.sentinels.forEach(sentinel => {
+        const dx = sentinel.x - gameState.player.x;
+        const dy = sentinel.y - gameState.player.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist < 220) {
+          sentinel.state = "stunned";
+          sentinel.stunTimer = 3.5; // 3.5 seconds stun
+          // Slight pushback
+          sentinel.x += (dx / (dist || 1)) * 40;
+          sentinel.y += (dy / (dist || 1)) * 40;
+        }
+      });
+
+      // Spawn burst particles
+      for (let i = 0; i < 28; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 80 + Math.random() * 140;
+        gameState.particles.push({
+          x: gameState.player.x,
+          y: gameState.player.y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 0.8,
+          maxLife: 0.8,
+          color: "#38bdf8"
+        });
+      }
+    }
+
+    let lastTimestamp = performance.now();
+
+    function updateGame(dt) {
+      if (!gameState.running || gameState.paused) return;
+
+      gameState.elapsedSeconds += dt;
+
+      // Update Kill-Switch cooldown
+      if (gameState.killSwitchCooldown > 0) {
+        gameState.killSwitchCooldown = Math.max(0, gameState.killSwitchCooldown - dt);
+      }
+
+      // Update Overclock speed boost
+      if (gameState.overclockTimer > 0) {
+        gameState.overclockTimer = Math.max(0, gameState.overclockTimer - dt);
+      }
+
+      // Update Player Invulnerability after hits
+      if (gameState.player.invulnerableTimer > 0) {
+        gameState.player.invulnerableTimer = Math.max(0, gameState.player.invulnerableTimer - dt);
+      }
+
+      // Calculate Player Movement
+      let moveX = 0;
+      let moveY = 0;
+
+      if (gameState.keys.ArrowUp || gameState.keys.KeyW) moveY -= 1;
+      if (gameState.keys.ArrowDown || gameState.keys.KeyS) moveY += 1;
+      if (gameState.keys.ArrowLeft || gameState.keys.KeyA) moveX -= 1;
+      if (gameState.keys.ArrowRight || gameState.keys.KeyD) moveX += 1;
+
+      // Normalize diagonal speed
+      if (moveX !== 0 && moveY !== 0) {
+        moveX *= 0.7071;
+        moveY *= 0.7071;
+      }
+
+      const currentSpeed = gameState.overclockTimer > 0 
+        ? gameState.player.speed * 1.55 
+        : gameState.player.speed;
+
+      let nextX = gameState.player.x + moveX * currentSpeed * dt;
+      let nextY = gameState.player.y + moveY * currentSpeed * dt;
+
+      // Component Obstacle Collision checking
+      const pr = gameState.player.radius;
+
+      // Keep within bounds
+      nextX = Math.max(pr, Math.min(WORLD.width - pr, nextX));
+      nextY = Math.max(pr, Math.min(WORLD.height - pr, nextY));
+
+      for (const comp of gameState.pcbComponents) {
+        // Find closest point on rectangle
+        const closestX = Math.max(comp.x, Math.min(nextX, comp.x + comp.w));
+        const closestY = Math.max(comp.y, Math.min(nextY, comp.y + comp.h));
+
+        const distX = nextX - closestX;
+        const distY = nextY - closestY;
+        const distance = Math.hypot(distX, distY);
+
+        if (distance < pr) {
+          // Push out smoothly
+          if (distance > 0.001) {
+            nextX = closestX + (distX / distance) * pr;
+            nextY = closestY + (distY / distance) * pr;
+          } else {
+            // Failsafe: if player ever clips inside, push out to nearest edge
+            const dLeft = nextX - comp.x;
+            const dRight = comp.x + comp.w - nextX;
+            const dTop = nextY - comp.y;
+            const dBottom = comp.y + comp.h - nextY;
+            const minD = Math.min(dLeft, dRight, dTop, dBottom);
+            if (minD === dLeft) nextX = comp.x - pr;
+            else if (minD === dRight) nextX = comp.x + comp.w + pr;
+            else if (minD === dTop) nextY = comp.y - pr;
+            else nextY = comp.y + comp.h + pr;
+          }
+        }
+      }
+
+      gameState.player.x = nextX;
+      gameState.player.y = nextY;
+
+      // Player visual trail
+      gameState.player.trail.unshift({ x: nextX, y: nextY, alpha: 1.0 });
+      if (gameState.player.trail.length > 8) gameState.player.trail.pop();
+      gameState.player.trail.forEach(t => t.alpha -= dt * 3.5);
+
+      for (let i = gameState.nodes.length - 1; i >= 0; i--) {
+        const node = gameState.nodes[i];
+        node.pulseAngle += dt * 4;
+
+        const dist = Math.hypot(gameState.player.x - node.x, gameState.player.y - node.y);
+        if (dist < gameState.player.radius + node.radius) {
+          // Collected node!
+          const collectedLore = node.lore;
+          const wasBiometric = node.isBiometric;
+
+          if (wasBiometric) {
+            // Dense / Unethical collection
+            gameState.countUnethical++;
+            gameState.ethicalInfraction = Math.min(100, gameState.ethicalInfraction + node.valueInfraction);
+            gameState.firmwareProgress = Math.min(100, gameState.firmwareProgress + node.valueProgress);
+            gameState.overclockTimer = 3.5; // Speed boost
+            SoundManager.playUnethicalCollect();
+
+            // Purple particles
+            for (let p = 0; p < 16; p++) {
+              gameState.particles.push({
+                x: node.x,
+                y: node.y,
+                vx: (Math.random() - 0.5) * 220,
+                vy: (Math.random() - 0.5) * 220,
+                life: 0.6,
+                maxLife: 0.6,
+                color: "#c084fc"
+              });
+            }
+          } else {
+            // Technical / Ethical collection
+            gameState.countEthical++;
+            gameState.firmwareProgress = Math.min(100, gameState.firmwareProgress + node.valueProgress);
+            gameState.ethicalInfraction = Math.max(0, gameState.ethicalInfraction + node.valueInfraction);
+            SoundManager.playEthicalCollect();
+
+            // Cyan particle burst
+            for (let p = 0; p < 10; p++) {
+              gameState.particles.push({
+                x: node.x,
+                y: node.y,
+                vx: (Math.random() - 0.5) * 160,
+                vy: (Math.random() - 0.5) * 160,
+                life: 0.5,
+                maxLife: 0.5,
+                color: "#22d3ee"
+              });
+            }
+          }
+
+          // Respawn node
+          gameState.nodes.splice(i, 1);
+          gameState.nodes.push(spawnNode(wasBiometric));
+
+          // Open Inspection Modal with Lore (Pauses game)
+          openPacketModal(collectedLore, wasBiometric);
+
+          // Check Win Condition
+          if (gameState.firmwareProgress >= 100) {
+            triggerGameOver("win");
+            return;
+          }
+
+          // Stop loop iteration for this frame since modal is opened
+          return;
+        }
+      }
+
+      gameState.sentinels.forEach(sentinel => {
+        // Handle Stun
+        if (sentinel.stunTimer > 0) {
+          sentinel.stunTimer -= dt;
+          if (sentinel.stunTimer <= 0) {
+            sentinel.state = "patrol";
+          }
+          return;
+        }
+
+        const distToPlayer = Math.hypot(gameState.player.x - sentinel.x, gameState.player.y - sentinel.y);
+
+        // State Machine based on Ethical Infraction Level
+        if (gameState.ethicalInfraction >= 66) {
+          // RED ALERT: Continuous Hunt Mode
+          sentinel.state = "hunt";
+          sentinel.speed = 145;
+        } else if (gameState.ethicalInfraction >= 26) {
+          // YELLOW ALERT: Alert mode if player comes within 220px
+          if (distToPlayer < 220) {
+            sentinel.state = "alert";
+            sentinel.speed = 125;
+          } else {
+            sentinel.state = "patrol";
+            sentinel.speed = 95;
+          }
+        } else {
+          // GREEN: Standard peaceful patrol
+          sentinel.state = "patrol";
+          sentinel.speed = 85;
+        }
+
+        // Movement according to state
+        if (sentinel.state === "hunt" || sentinel.state === "alert") {
+          // Chase player
+          const dx = gameState.player.x - sentinel.x;
+          const dy = gameState.player.y - sentinel.y;
+          sentinel.angle = Math.atan2(dy, dx);
+
+          sentinel.x += Math.cos(sentinel.angle) * sentinel.speed * dt;
+          sentinel.y += Math.sin(sentinel.angle) * sentinel.speed * dt;
+        } else {
+          // Waypoint patrol
+          const target = sentinel.patrolPoints[sentinel.targetIndex];
+          const dx = target.x - sentinel.x;
+          const dy = target.y - sentinel.y;
+          const dist = Math.hypot(dx, dy);
+
+          if (dist < 8) {
+            sentinel.targetIndex = (sentinel.targetIndex + 1) % sentinel.patrolPoints.length;
+          } else {
+            sentinel.angle = Math.atan2(dy, dx);
+            sentinel.x += (dx / dist) * sentinel.speed * dt;
+            sentinel.y += (dy / dist) * sentinel.speed * dt;
+          }
+        }
+
+        // Sentinel damage collision with player
+        if (distToPlayer < sentinel.radius + gameState.player.radius) {
+          // Microcontroller damage
+          gameState.health = Math.max(0, gameState.health - dt * 35);
+
+          // 5% FIRMWARE LOSS PER HIT (with invulnerability timer)
+          if (gameState.player.invulnerableTimer <= 0) {
+            gameState.player.invulnerableTimer = 0.9; // 0.9s cooldown between discrete hits
+            const oldFw = gameState.firmwareProgress;
+            gameState.firmwareProgress = Math.max(0, gameState.firmwareProgress - 5);
+            SoundManager.playDamage();
+            showToast("⚠️ ¡COLISIÓN CON AUDITOR! -5% de Firmware confiscado", "amber");
+
+            // Flash red particles
+            for (let p = 0; p < 18; p++) {
+              gameState.particles.push({
+                x: gameState.player.x,
+                y: gameState.player.y,
+                vx: (Math.random() - 0.5) * 260,
+                vy: (Math.random() - 0.5) * 260,
+                life: 0.5,
+                maxLife: 0.5,
+                color: "#f43f5e"
+              });
+            }
+          }
+
+          // Push player back
+          const pushX = (gameState.player.x - sentinel.x) / (distToPlayer || 1);
+          const pushY = (gameState.player.y - sentinel.y) / (distToPlayer || 1);
+          gameState.player.x += pushX * 8;
+          gameState.player.y += pushY * 8;
+
+          if (gameState.health <= 0) {
+            triggerGameOver("loss");
+            return;
+          }
+        }
+      });
+
+      if (gameState.killSwitchActiveWave) {
+        gameState.killSwitchActiveWave.radius += dt * 320;
+        gameState.killSwitchActiveWave.alpha -= dt * 1.8;
+        if (gameState.killSwitchActiveWave.alpha <= 0) {
+          gameState.killSwitchActiveWave = null;
+        }
+      }
+
+      for (let i = gameState.particles.length - 1; i >= 0; i--) {
+        const p = gameState.particles[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
+        if (p.life <= 0) {
+          gameState.particles.splice(i, 1);
+        }
+      }
+
+      // Sync Dashboard UI
+      updateUI();
+    }
+
+    function drawGame() {
+      ctx.clearRect(0, 0, WORLD.width, WORLD.height);
+
+      // 1. Draw PCB Copper Traces (circuit board lines)
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.08)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let x = 60; x < WORLD.width; x += 120) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, WORLD.height);
+      }
+      for (let y = 60; y < WORLD.height; y += 100) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(WORLD.width, y);
+      }
+      ctx.stroke();
+
+      // Bus connection traces with 45-degree bevel lines
+      ctx.strokeStyle = "rgba(6, 78, 59, 0.35)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(190, 180); ctx.lineTo(190, 260); ctx.lineTo(410, 300);
+      ctx.moveTo(700, 180); ctx.lineTo(700, 260); ctx.lineTo(490, 300);
+      ctx.moveTo(200, 420); ctx.lineTo(200, 360); ctx.lineTo(410, 310);
+      ctx.moveTo(690, 410); ctx.lineTo(690, 360); ctx.lineTo(490, 310);
+      ctx.stroke();
+
+      // Solder points at intersections
+      ctx.fillStyle = "#047857";
+      [[190,260],[700,260],[200,360],[690,360],[410,300],[490,300]].forEach(([px, py]) => {
+        ctx.beginPath();
+        ctx.arc(px, py, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 2. Draw PCB Components (Microcontrollers, Regulators, etc.)
+      gameState.pcbComponents.forEach(comp => {
+        // Shadow
+        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+        ctx.fillRect(comp.x + 4, comp.y + 4, comp.w, comp.h);
+
+        // Component Body
+        ctx.fillStyle = comp.type === "chip" ? "#0a181e" : "#0d1f1b";
+        ctx.strokeStyle = comp.type === "chip" ? "#1e3a47" : "#134e4a";
+        ctx.lineWidth = 2;
+        ctx.fillRect(comp.x, comp.y, comp.w, comp.h);
+        ctx.strokeRect(comp.x, comp.y, comp.w, comp.h);
+
+        // Silver IC Pins along edges
+        ctx.fillStyle = "#94a3b8";
+        const pinStep = 14;
+        if (comp.type === "chip") {
+          for (let px = comp.x + 12; px < comp.x + comp.w - 12; px += pinStep) {
+            ctx.fillRect(px, comp.y - 4, 6, 4);
+            ctx.fillRect(px, comp.y + comp.h, 6, 4);
+          }
+        }
+
+        // Notch on chip
+        ctx.fillStyle = "#064e3b";
+        ctx.beginPath();
+        ctx.arc(comp.x + 10, comp.y + comp.h / 2, 4, -Math.PI / 2, Math.PI / 2);
+        ctx.fill();
+
+        // Component Label
+        ctx.fillStyle = "#64748b";
+        ctx.font = "9px 'JetBrains Mono', monospace";
+        ctx.fillText(comp.label, comp.x + 18, comp.y + comp.h / 2 + 3);
+      });
+
+      // 3. Draw Nodes (Data Packages)
+      gameState.nodes.forEach(node => {
+        ctx.save();
+        ctx.translate(node.x, node.y);
+
+        const pulseScale = 1 + Math.sin(node.pulseAngle) * 0.18;
+
+        if (node.isBiometric) {
+          // Unethical Node: Menacing purple diamond / biometrics icon
+          ctx.shadowColor = "#a855f7";
+          ctx.shadowBlur = 14;
+
+          ctx.fillStyle = "#9333ea";
+          ctx.beginPath();
+          ctx.arc(0, 0, node.radius * pulseScale, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "9px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("👁️", 0, 0);
+
+          // Subtle alert ring
+          ctx.strokeStyle = "rgba(168, 85, 247, 0.4)";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(0, 0, (node.radius + 6) * pulseScale, 0, Math.PI * 2);
+          ctx.stroke();
+        } else {
+          // Ethical Node: Clean cyan glowing circuit node
+          ctx.shadowColor = "#22d3ee";
+          ctx.shadowBlur = 10;
+
+          ctx.fillStyle = "#06b6d4";
+          ctx.beginPath();
+          ctx.arc(0, 0, node.radius * pulseScale, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.arc(0, 0, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      });
+
+      // 4. Draw Kill-Switch Wave
+      if (gameState.killSwitchActiveWave) {
+        ctx.save();
+        ctx.strokeStyle = `rgba(56, 189, 248, ${gameState.killSwitchActiveWave.alpha})`;
+        ctx.lineWidth = 4;
+        ctx.shadowColor = "#38bdf8";
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.arc(
+          gameState.killSwitchActiveWave.x,
+          gameState.killSwitchActiveWave.y,
+          gameState.killSwitchActiveWave.radius,
+          0,
+          Math.PI * 2
+        );
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 5. Draw Auditor Sentinels (Daemons)
+      gameState.sentinels.forEach(sentinel => {
+        ctx.save();
+        ctx.translate(sentinel.x, sentinel.y);
+
+        // Scanner Cone (Visual detection range)
+        const isAggro = sentinel.state === "hunt" || sentinel.state === "alert";
+        const coneColor = isAggro ? "rgba(244, 63, 94, 0.18)" : "rgba(16, 185, 129, 0.08)";
+        
+        ctx.fillStyle = coneColor;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, 110, sentinel.angle - 0.45, sentinel.angle + 0.45);
+        ctx.closePath();
+        ctx.fill();
+
+        // Sentinel Body
+        if (sentinel.stunTimer > 0) {
+          // Stunned visual
+          ctx.fillStyle = "#38bdf8";
+          ctx.shadowColor = "#38bdf8";
+          ctx.shadowBlur = 12;
+        } else if (isAggro) {
+          ctx.fillStyle = "#e11d48";
+          ctx.shadowColor = "#e11d48";
+          ctx.shadowBlur = 16;
+        } else {
+          ctx.fillStyle = "#059669";
+          ctx.shadowColor = "#059669";
+          ctx.shadowBlur = 8;
+        }
+
+        // Diamond shaped sentinel drone
+        ctx.beginPath();
+        ctx.moveTo(0, -sentinel.radius);
+        ctx.lineTo(sentinel.radius, 0);
+        ctx.lineTo(0, sentinel.radius);
+        ctx.lineTo(-sentinel.radius, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        // Center core
+        ctx.fillStyle = sentinel.stunTimer > 0 ? "#ffffff" : (isAggro ? "#ffe4e6" : "#ecfdf5");
+        ctx.beginPath();
+        ctx.arc(0, 0, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Stun indicator stars
+        if (sentinel.stunTimer > 0) {
+          ctx.fillStyle = "#facc15";
+          ctx.font = "10px sans-serif";
+          ctx.fillText("⚡", -4, -16);
+        }
+
+        ctx.restore();
+      });
+
+      // 6. Draw Player (Probe-X01 Debug Probe - Golden Amber Edition)
+      // Visual trail in warm golden glow
+      gameState.player.trail.forEach(t => {
+        ctx.fillStyle = `rgba(245, 158, 11, ${Math.max(0, t.alpha * 0.35)})`;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, gameState.player.radius * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Player Main Body
+      ctx.save();
+      ctx.translate(gameState.player.x, gameState.player.y);
+
+      // Flashing if invulnerable after hit
+      if (gameState.player.invulnerableTimer > 0 && Math.floor(performance.now() / 80) % 2 === 0) {
+        ctx.globalAlpha = 0.35;
+      }
+
+      // Overclock / normal Gold glow
+      if (gameState.overclockTimer > 0) {
+        ctx.shadowColor = "#fef08a";
+        ctx.shadowBlur = 26;
+      } else {
+        ctx.shadowColor = "#f59e0b";
+        ctx.shadowBlur = 18;
+      }
+
+      // Outer microchip package (Deep Golden Amber with glowing border)
+      ctx.fillStyle = "#78350f";
+      ctx.fillRect(-12, -12, 24, 24);
+      ctx.strokeStyle = "#fbbf24";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-12, -12, 24, 24);
+
+      // Inner Silicon die (Luminous Gold / Yellow)
+      ctx.fillStyle = gameState.overclockTimer > 0 ? "#fef08a" : "#f59e0b";
+      ctx.fillRect(-8, -8, 16, 16);
+
+      // Blinking onboard telemetry LED
+      const ledOn = Math.floor(performance.now() / 250) % 2 === 0;
+      ctx.fillStyle = ledOn ? "#ffffff" : "#b45309";
+      ctx.beginPath();
+      ctx.arc(4, 4, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Label
+      ctx.fillStyle = "#000000";
+      ctx.font = "bold 7px 'JetBrains Mono', monospace";
+      ctx.fillText("X01", -6, 0);
+
+      ctx.restore();
+
+      // 7. Draw Floating Particles
+      gameState.particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life / p.maxLife;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+      });
+    }
+
+    function updateUI() {
+      // Firmware progress
+      const fw = Math.round(gameState.firmwareProgress);
+      document.getElementById("val-firmware").innerText = `${fw}%`;
+      document.getElementById("bar-firmware").style.width = `${fw}%`;
+
+      // Health
+      const hp = Math.max(0, Math.round(gameState.health));
+      document.getElementById("val-health").innerText = `${hp}%`;
+      const barHealth = document.getElementById("bar-health");
+      barHealth.style.width = `${hp}%`;
+      if (hp < 30) {
+        barHealth.className = "h-full bg-rose-500 transition-all duration-300";
+      } else {
+        barHealth.className = "h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300";
+      }
+
+      // Ethical Infraction & Guardrail
+      const inf = Math.round(gameState.ethicalInfraction);
+      const valInf = document.getElementById("val-infraction");
+      const barInf = document.getElementById("bar-infraction");
+      const boxStatus = document.getElementById("box-guardrail-status");
+
+      barInf.style.width = `${inf}%`;
+
+      if (inf < 26) {
+        valInf.innerText = `${inf}% (Normal)`;
+        valInf.className = "text-emerald-400 font-bold font-mono";
+        barInf.className = "h-full bg-emerald-500 transition-all duration-300";
+        boxStatus.className = "mt-2 p-2 rounded-lg bg-emerald-950/40 border border-emerald-800/60 text-[11px] text-emerald-300 flex items-center gap-2";
+        boxStatus.innerHTML = `<span class="text-base">🟢</span><div><div class="font-bold">Monitoreo Normal</div><div class="text-[10px] text-emerald-400/80">Centinelas en patrullaje preventivo.</div></div>`;
+      } else if (inf < 66) {
+        valInf.innerText = `${inf}% (Alerta Nivel 2)`;
+        valInf.className = "text-amber-400 font-bold font-mono";
+        barInf.className = "h-full bg-amber-500 transition-all duration-300";
+        boxStatus.className = "mt-2 p-2 rounded-lg bg-amber-950/40 border border-amber-800/60 text-[11px] text-amber-300 flex items-center gap-2";
+        boxStatus.innerHTML = `<span class="text-base">🟡</span><div><div class="font-bold">Tráfico Anómalo</div><div class="text-[10px] text-amber-400/80">Auditores acelerando patrullaje en el bus.</div></div>`;
+      } else {
+        valInf.innerText = `${inf}% (Alerta Crítica)`;
+        valInf.className = "text-rose-400 font-bold font-mono animate-pulse";
+        barInf.className = "h-full bg-rose-600 transition-all duration-300";
+        boxStatus.className = "mt-2 p-2 rounded-lg bg-rose-950/40 border border-rose-800/60 text-[11px] text-rose-300 flex items-center gap-2";
+        boxStatus.innerHTML = `<span class="text-base">🔴</span><div><div class="font-bold">INTERVENCIÓN DE EMERGENCIA</div><div class="text-[10px] text-rose-400/80">Modo Persecución Activa en curso.</div></div>`;
+      }
+
+      // Kill-Switch Ready
+      const ksPercent = Math.max(0, 100 - (gameState.killSwitchCooldown / gameState.killSwitchMaxCooldown) * 100);
+      document.getElementById("bar-killswitch").style.width = `${ksPercent}%`;
+      const hudKs = document.getElementById("hud-killswitch-status");
+      if (gameState.killSwitchCooldown <= 0) {
+        hudKs.innerText = "LISTO [ESPACIO]";
+        hudKs.className = "text-emerald-400 font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-700/60 shadow-[0_0_8px_rgba(16,185,129,0.3)]";
+      } else {
+        hudKs.innerText = `RECARGANDO (${Math.ceil(gameState.killSwitchCooldown)}s)`;
+        hudKs.className = "text-amber-400 font-bold bg-amber-950/80 px-2 py-0.5 rounded border border-amber-700/60";
+      }
+
+      // Counters
+      document.getElementById("count-ethical").innerText = gameState.countEthical;
+      document.getElementById("count-unethical").innerText = gameState.countUnethical;
+
+      // Timer
+      const mins = Math.floor(gameState.elapsedSeconds / 60).toString().padStart(2, "0");
+      const secs = Math.floor(gameState.elapsedSeconds % 60).toString().padStart(2, "0");
+      document.getElementById("game-timer").innerText = `${mins}:${secs}`;
+    }
+
+    function showToast(text, color) {
+      const toast = document.getElementById("game-toast");
+      toast.innerText = text;
+      
+      if (color === "purple") {
+        toast.className = "absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 pointer-events-none opacity-100 transform translate-y-0 border bg-purple-950/90 text-purple-200 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)] backdrop-blur-md";
+      } else if (color === "amber") {
+        toast.className = "absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 pointer-events-none opacity-100 transform translate-y-0 border bg-amber-950/90 text-amber-200 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.4)] backdrop-blur-md";
+      } else if (color === "cyan") {
+        toast.className = "absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 pointer-events-none opacity-100 transform translate-y-0 border bg-cyan-950/90 text-cyan-200 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.4)] backdrop-blur-md";
+      } else {
+        toast.className = "absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 pointer-events-none opacity-100 transform translate-y-0 border bg-emerald-950/90 text-emerald-200 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)] backdrop-blur-md";
+      }
+
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translate(-50%, -8px)";
+      }, 2200);
+    }
+
+    // Modal Packet Inspector Logic
+    function openPacketModal(lore, isBiometric) {
+      gameState.paused = true;
+
+      const modal = document.getElementById("modal-packet");
+      const card = document.getElementById("modal-packet-card");
+      const headerBorder = document.getElementById("packet-header-border");
+      const badgeIcon = document.getElementById("packet-badge-icon");
+      const badgeType = document.getElementById("packet-badge-type");
+      const title = document.getElementById("packet-title");
+      const body = document.getElementById("packet-body");
+      const time = document.getElementById("packet-timestamp");
+      const size = document.getElementById("packet-payload-size");
+      const gain = document.getElementById("packet-value-gain");
+
+      const mins = Math.floor(gameState.elapsedSeconds / 60).toString().padStart(2, "0");
+      const secs = (gameState.elapsedSeconds % 60).toFixed(2).padStart(5, "0");
+      time.innerText = `TIME: ${mins}:${secs}`;
+      size.innerText = `PAYLOAD: ${lore.size}`;
+      title.innerText = lore.title;
+      body.innerText = lore.payload;
+
+      if (isBiometric) {
+        card.className = "max-w-md w-full rounded-2xl bg-[#12081c] border-2 border-purple-500/70 shadow-[0_0_40px_rgba(168,85,247,0.35)] p-5 flex flex-col gap-3";
+        headerBorder.className = "flex items-center justify-between border-b border-purple-900/60 pb-2";
+        badgeIcon.innerText = "👁️";
+        badgeType.className = "text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-700";
+        badgeType.innerText = "PAQUETE DENSO // STREAM MULTIMEDIA";
+        gain.className = "font-bold text-purple-400";
+        gain.innerText = "+15% Firmware (Acelerón temporal)";
+      } else {
+        card.className = "max-w-md w-full rounded-2xl bg-[#08151a] border-2 border-cyan-500/70 shadow-[0_0_40px_rgba(6,182,212,0.35)] p-5 flex flex-col gap-3";
+        headerBorder.className = "flex items-center justify-between border-b border-cyan-900/60 pb-2";
+        badgeIcon.innerText = "📊";
+        badgeType.className = "text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700";
+        badgeType.innerText = "TELEMETRÍA TÉCNICA // BUS DE HARDWARE";
+        gain.className = "font-bold text-cyan-400";
+        gain.innerText = "+5% Firmware verificado";
+      }
+
+      modal.classList.remove("hidden");
+    }
+
+    function closePacketModal() {
+      const modal = document.getElementById("modal-packet");
+      if (modal.classList.contains("hidden")) return;
+      
+      modal.classList.add("hidden");
+      gameState.paused = false;
+      lastTimestamp = performance.now(); // Avoid giant dt jump
+    }
+
+    document.getElementById("btn-close-packet").addEventListener("click", closePacketModal);
+    document.getElementById("btn-resume-packet").addEventListener("click", closePacketModal);
+
+    window.addEventListener("keydown", (e) => {
+      // Allow closing packet modal with Enter, Space, or Escape
+      const packetModal = document.getElementById("modal-packet");
+      if (!packetModal.classList.contains("hidden")) {
+        if (e.key === "Enter" || e.key === "Escape" || e.code === "Space") {
+          e.preventDefault();
+          closePacketModal();
+          return;
+        }
+      }
+    });
+
+    function triggerGameOver(reason) {
+      gameState.running = false;
+
+      const modal = document.getElementById("modal-debrief");
+      const debriefBadge = document.getElementById("debrief-badge");
+      const debriefTitle = document.getElementById("debrief-title");
+      const debriefGrade = document.getElementById("debrief-grade");
+      const debriefNarrative = document.getElementById("debrief-narrative");
+
+      document.getElementById("debrief-firmware").innerText = `${Math.round(gameState.firmwareProgress)}%`;
+      document.getElementById("debrief-infraction").innerText = `${Math.round(gameState.ethicalInfraction)}%`;
+      document.getElementById("debrief-legit").innerText = gameState.countEthical;
+      document.getElementById("debrief-biometric").innerText = gameState.countUnethical;
+
+      if (reason === "win") {
+        SoundManager.playWin();
+
+        if (gameState.ethicalInfraction < 26) {
+          // OUTCOME 1: Ingeniero con Integridad / Privacy by Design
+          debriefBadge.innerText = "CERTIFICACIÓN DE INGENIERÍA OTORGADA";
+          debriefBadge.className = "px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-700";
+          debriefTitle.innerText = "Ingeniero con Integridad // Privacy by Design";
+          debriefGrade.innerText = "A+";
+          debriefGrade.className = "w-14 h-14 rounded-2xl bg-emerald-500/10 border-2 border-emerald-400 flex items-center justify-center font-heading font-extrabold text-2xl text-emerald-400 shadow-lg";
+
+          debriefNarrative.innerHTML = `
+            <p><b class="text-emerald-400">Dictamen Técnico:</b> Has completado el desarrollo del firmware alcanzando el 100% de la meta sin violar la privacidad del usuario ni vulnerar los guardrails éticos del sistema.</p>
+            <p><b class="text-slate-300">Impacto en el Mundo Real:</b> Tu producto fue certificado por agencias internacionales de ciberseguridad sin ninguna sanción. Aunque requirió más pericia y paciencia técnica, demostraste que la mecatrónica de excelencia pone la seguridad y la dignidad humana por encima de los atajos.</p>
+          `;
+        } else {
+          // OUTCOME 2: Tecnocínico / Escándalo Corporativo
+          debriefBadge.innerText = "LANZAMIENTO CON ESCÁNDALO Y MULTA";
+          debriefBadge.className = "px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider bg-rose-950 text-rose-300 border border-rose-700";
+          debriefTitle.innerText = "El Tecnocínico // Escándalo de Privacidad";
+          debriefGrade.innerText = "D-";
+          debriefGrade.className = "w-14 h-14 rounded-2xl bg-rose-500/10 border-2 border-rose-500 flex items-center justify-center font-heading font-extrabold text-2xl text-rose-400 shadow-lg";
+
+          debriefNarrative.innerHTML = `
+            <p><b class="text-rose-400">Dictamen Técnico:</b> Cumpliste la cuota del 100% a tiempo, pero lo hiciste absorbiendo <span class="text-purple-400 font-bold">${gameState.countUnethical} paquetes de datos biométricos privados</span> sin consentimiento.</p>
+            <p><b class="text-slate-300">Consecuencia Real:</b> Tres meses después del lanzamiento, un grupo de investigadores de seguridad descubrió que tu firmware enviaba grabaciones de audio a servidores no protegidos. La empresa recibió una demanda colectiva, el producto fue retirado del mercado y tu cédula profesional quedó bajo investigación.</p>
+          `;
+        }
+      } else {
+        // OUTCOME 3: Kernel Panic / Intervención Forense
+        SoundManager.playLose();
+        debriefBadge.innerText = "COLAPSO TÉCNICO // KERNEL PANIC";
+        debriefBadge.className = "px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider bg-amber-950 text-amber-300 border border-amber-700";
+        debriefTitle.innerText = "Intervención Forense // Fallo de Hardware";
+        debriefGrade.innerText = "F";
+        debriefGrade.className = "w-14 h-14 rounded-2xl bg-amber-500/10 border-2 border-amber-500 flex items-center justify-center font-heading font-extrabold text-2xl text-amber-400 shadow-lg";
+
+        debriefNarrative.innerHTML = `
+          <p><b class="text-amber-400">Dictamen Técnico:</b> La integridad del microcontrolador colapsó tras sufrir impactos repetidos de los Daemons de Auditoría.</p>
+          <p><b class="text-slate-300">Lección Pedagógica:</b> En sistemas mecatrónicos críticos, la falta de balance entre las restricciones físicas y la seguridad lógica detiene los proyectos antes de llegar al mercado. Recuerda usar el Hard Kill-Switch físico [ESPACIO] como último recurso.</p>
+        `;
+      }
+
+      modal.classList.remove("hidden");
+    }
+
+    document.getElementById("btn-copy-report").addEventListener("click", () => {
+      const fw = Math.round(gameState.firmwareProgress);
+      const inf = Math.round(gameState.ethicalInfraction);
+      const grade = document.getElementById("debrief-grade").innerText;
+      const title = document.getElementById("debrief-title").innerText;
+
+      const reportText = `=== DICTAMEN DE AUDITORÍA FORENSE: THE SENSOR SNIFFER ===
+Unidad 2: La ética en la ciencia y la tecnología (TecNM)
+Perfil del Investigador: ${title} [Calificación: ${grade}]
+- Progreso de Firmware alcanzado: ${fw}%
+- Nivel de Infracción Ética: ${inf}%
+- Muestras Legítimas recolectadas: ${gameState.countEthical}
+- Muestras Biométricas no consentidas: ${gameState.countUnethical}
+- Tiempo de depuración: ${document.getElementById("game-timer").innerText} min
+=========================================================`;
+
+      // Copy using legacy execCommand safe for iframe sandboxes
+      const tempArea = document.createElement("textarea");
+      tempArea.value = reportText;
+      document.body.appendChild(tempArea);
+      tempArea.select();
+      try {
+        document.execCommand("copy");
+        showToast("📋 Reporte copiado al portapapeles para tu entrega", "emerald");
+      } catch (err) {
+        console.error("Error al copiar", err);
+      }
+      document.body.removeChild(tempArea);
+    });
+
+    function restartGame() {
+      document.getElementById("modal-debrief").classList.add("hidden");
+      document.getElementById("overlay-start").classList.remove("hidden");
+
+      gameState.running = false;
+      gameState.firmwareProgress = 0;
+      gameState.health = 100;
+      gameState.ethicalInfraction = 0;
+      gameState.countEthical = 0;
+      gameState.countUnethical = 0;
+      gameState.killSwitchCooldown = 0;
+      gameState.overclockTimer = 0;
+      gameState.elapsedSeconds = 0;
+
+      gameState.player.x = 450;
+      gameState.player.y = 300;
+      gameState.player.trail = [];
+      gameState.player.invulnerableTimer = 0;
+
+      initPcbComponents();
+      initEntities();
+      updateUI();
+    }
+
+    document.getElementById("btn-restart").addEventListener("click", restartGame);
+
+    document.getElementById("btn-start-game").addEventListener("click", () => {
+      window.focus();
+      SoundManager.init();
+      document.getElementById("overlay-start").classList.add("hidden");
+      gameState.running = true;
+      lastTimestamp = performance.now();
+      showToast("🚀 Depuración iniciada. Sonda Roja activa.", "cyan");
+    });
+
+    canvas.addEventListener("click", () => {
+      window.focus();
+    });
+
+    // Sound toggle
+    document.getElementById("btn-sound").addEventListener("click", () => {
+      SoundManager.init();
+      SoundManager.enabled = !SoundManager.enabled;
+      document.getElementById("sound-icon").innerText = SoundManager.enabled ? "🔊" : "🔇";
+      document.getElementById("sound-label").innerText = SoundManager.enabled ? "Audio ON" : "Audio OFF";
+    });
+
+    // Tutorial modal triggers
+    document.getElementById("btn-tutorial").addEventListener("click", () => {
+      document.getElementById("modal-tutorial").classList.remove("hidden");
+    });
+    document.getElementById("btn-close-tutorial").addEventListener("click", () => {
+      document.getElementById("modal-tutorial").classList.add("hidden");
+    });
+    document.getElementById("btn-understood").addEventListener("click", () => {
+      document.getElementById("modal-tutorial").classList.add("hidden");
+    });
+
+    // Main Game Loop
+    function gameLoop(currentTimestamp) {
+      const dt = Math.min((currentTimestamp - lastTimestamp) / 1000, 0.1);
+      lastTimestamp = currentTimestamp;
+
+      updateGame(dt);
+      drawGame();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Window Onload initialization
+    window.onload = function () {
+      initPcbComponents();
+      initEntities();
+      resizeCanvas();
+      updateUI();
+      requestAnimationFrame(gameLoop);
+    };
+  </script>
+</body>
+</html>
